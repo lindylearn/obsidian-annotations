@@ -2,6 +2,7 @@ export type Article = {
   id: string;
   metadata: Metadata;
   highlights: Highlights[];
+  page_notes: Highlights[];
 };
 
 export type Metadata = {
@@ -39,6 +40,10 @@ export type RenderTemplate = {
     tags: string[];
     group: string;
   }[];
+  my_page_note: {
+    annotation: string;
+    tags: string[];
+  }
 };
 
 export type Group = {

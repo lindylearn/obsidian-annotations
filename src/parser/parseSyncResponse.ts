@@ -2,7 +2,7 @@ import md5 from 'crypto-js/md5';
 import { moment } from 'obsidian';
 import { settingsStore } from '~/store';
 import { get } from 'svelte/store';
-import type { Highlights } from '../models'
+import type { Article, Highlights } from '../models'
 
 const parseAuthorUrl = (url: string) => {
     const domain = (new URL(url));
@@ -28,8 +28,8 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
                 .find(item => item.type === "TextQuoteSelector")
                 ?.exact
         } else {
-            // use parent annotation as highlight
-            isReply = true;
+            // Could be page note or reply
+            isReply = !!annotationData["references"]
         }
     
         const excludedTags = ["via-lindylearn.io", "via annotations.lindylearn.io", "lindylearn"];
@@ -54,7 +54,7 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
 }
 
 
-const parseSyncResponse = async (data) => {
+const parseSyncResponse = async (data): Promise<Article[]> => {
     const momentFormat = get(settingsStore).dateTimeFormat;
     const groups = get(settingsStore).groups;
 
@@ -77,11 +77,16 @@ const parseSyncResponse = async (data) => {
         const author = parseAuthorUrl(url);
         // Set article metadata, if not already set by previous annotation
         if (!result[md5Hash]) {
-            result[md5Hash] = { id: md5Hash, metadata: { title, url, author }, highlights: [] };
+            result[md5Hash] = { id: md5Hash, metadata: { title, url, author }, highlights: [], page_notes: [] };
         }
 
-        result[md5Hash].highlights.push(parseHighlight(annotationData, momentFormat));
-
+        const annotation = parseHighlight(annotationData, momentFormat)
+        if (annotation.text) {
+            result[md5Hash].highlights.push(annotation);
+        } else if (!annotation.isReply) {
+            result[md5Hash].page_notes.push(annotation);
+        }
+        
         return result;
     }, {});
 

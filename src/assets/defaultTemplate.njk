@@ -8,6 +8,11 @@
 - Written: x
 - Annotated: x{% endif %}
 
+{% if is_new_article -%}## Page Note {%- endif %}
+{% if my_page_note -%} {{my_page_note.annotation}}
+{% for tag in my_page_note.tags %} [[{{tag}}]]
+{% endfor %} {%- endif %}
+
 {% if is_new_article -%}## My Annotations{%- endif %}
 {% for highlight in highlights %}
 `"{{highlight.text | replace("\n", " ") | replace("            ", " ")}}"`

@@ -18,14 +18,15 @@ export class Renderer {
   }
 
   render(entry: Article, isNew = true): string {
-    const { metadata , highlights } = entry;
+    const { metadata , highlights, page_notes } = entry;
 
     const context: RenderTemplate = {
        is_new_article: isNew,
        ...metadata,
        highlights: highlights.map((a) => ({
         ...a
-       }))
+       })),
+       my_page_note: page_notes?.[0]
     };
 
     const template = get(settingsStore).template;
