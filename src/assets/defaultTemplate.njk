@@ -1,12 +1,15 @@
 {% if is_new_article %}# {{title}}
 
 ## Metadata
-{% if author %}- Author: [{{author}}]({{authorUrl}}){% endif %}
+{% if author %}- Author: [[{{author}}]]{% endif %}
 - Title: {{title}}
-{% if url %}- Reference: {{url}}{% endif %}
-- Category: #article{% endif %}
+{% if url %}- Link: {{url}}{% endif %}
+- Category: #article
+- Written: x
+- Annotated: x{% endif %}
 
-{% if is_new_article -%}## Highlights{%- endif %}
-{% for highlight in highlights -%}- {{highlight.text}} — [Updated on {{highlight.updated}}]({{highlight.incontext}}) {% if 'Private' != highlight.group %} — Group: #{{highlight.group| replace(" ", "-")}}{%- endif %}
-{% if highlight.tags | length %}   - Tags: {% for tag in highlight.tags -%} #{{tag | replace(" ", "-")+" "}}{%- endfor %}{%- endif %}
-{% if highlight.annotation %}   - Annotation: {{highlight.annotation}}{%- endif -%}{%- endfor -%}
+{% if is_new_article -%}## My Annotations{%- endif %}
+{% for highlight in highlights %}
+`"{{highlight.text | replace("\n", " ") | replace("            ", " ")}}"`
+{% if highlight.annotation or (highlight.tags | length) %}- {{highlight.annotation | replace("\n", " ")}}{% for tag in highlight.tags %} [[{{tag}}]]{% endfor %}{%- endif %}
+{% endfor %}
