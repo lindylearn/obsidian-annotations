@@ -21,6 +21,7 @@ export type Highlights = {
   annotation: string;
   tags: string[];
   group: string;
+  isReply?: boolean;
 };
 
 export type RenderTemplate = {
