@@ -1,20 +1,22 @@
+{% macro comment(data) %}- {{data.annotation | replace("\n", " ")}}{% for tag in data.tags %} [[{{tag}}]]{% endfor %}
+{% for reply in data.replies %}	{{ comment(reply) }}{% endfor %}{% endmacro %}
 {% if is_new_article %}# {{title}}
 
 ## Metadata
 {% if author %}- Author: [[{{author}}]]{% endif %}
 - Title: {{title}}
 {% if url %}- Link: {{url}}{% endif %}
-- Category: #article
-- Written: x
-- Annotated: x{% endif %}
+- Category: #article{% endif %}
 
 {% if is_new_article -%}## Page Note {%- endif %}
 {% if my_page_note -%} {{my_page_note.annotation}}
-{% for tag in my_page_note.tags %} [[{{tag}}]]
-{% endfor %} {%- endif %}
 
-{% if is_new_article -%}## My Annotations{%- endif %}
+{% for tag in my_page_note.tags %} [[{{tag}}]]{% endfor %}{%- endif %}
+
+{% if is_new_article -%}## Annotations{%- endif %}
 {% for highlight in highlights %}
 `"{{highlight.text | replace("\n", " ") | replace("            ", " ")}}"`
-{% if highlight.annotation or (highlight.tags | length) %}- {{highlight.annotation | replace("\n", " ")}}{% for tag in highlight.tags %} [[{{tag}}]]{% endfor %}{%- endif %}
+{% if highlight.annotation or (highlight.tags | length) %}{{ comment(highlight) }}{%- endif %}
 {% endfor %}
+
+

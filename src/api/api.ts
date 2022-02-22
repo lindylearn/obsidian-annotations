@@ -162,4 +162,31 @@ export default class ApiManager {
     return result;
   }
 
+  async getHighlight(id: string) {
+    let result;
+    let response;
+
+    try {
+      response = await fetch(`${this.baseUrl}/annotations/${id}`, { headers: { ...this.getHeaders() } })
+    }
+    catch (e) {
+      new Notice('Error occurs. Please check your API token and try again.')
+      console.log(`Failed to fetch annotation with id ${id}: `, e);
+      return null;
+    }
+
+    if (response && response.ok) {
+      const data = await response.json();
+
+      result = data;
+
+    } else {
+      new Notice('Sync failed. Please check your API token and try again.')
+      console.log("Failed to fetch groups : ", response);
+      return;
+    }
+
+    return result;
+  }
+
 }

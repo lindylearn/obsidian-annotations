@@ -22,7 +22,8 @@ export type Highlights = {
   annotation: string;
   tags: string[];
   group: string;
-  isReply?: boolean;
+  replyTo?: Highlights;
+  replies?: Highlights[];
 };
 
 export type RenderTemplate = {

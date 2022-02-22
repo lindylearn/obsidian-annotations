@@ -3,6 +3,7 @@ import { moment } from 'obsidian';
 import { settingsStore } from '~/store';
 import { get } from 'svelte/store';
 import type { Article, Highlights } from '../models'
+import type ApiManager from '~/api/api';
 
 const parseAuthorUrl = (url: string) => {
     const domain = (new URL(url));
@@ -18,10 +19,10 @@ const parseTitleFromUrl = (url: string) => {
     return title;
 }
 
-const parseHighlight = (annotationData, momentFormat: string): Highlights => {
+const parseHighlight = async (annotationData, momentFormat: string, apiManager: ApiManager): Promise<Highlights> => {
     try {   
         // Get highlighted text or reply
-        let isReply, highlightText = null;
+        let replyTo, highlightText = null;
         const selector = annotationData['target'][0]['selector']
         if (selector) {
             highlightText = selector
@@ -29,9 +30,14 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
                 ?.exact
         } else {
             // Could be page note or reply
-            isReply = !!annotationData["references"]
-        }
-    
+            
+            if (annotationData['references']) {
+                // Recursively fetch current annotation thread
+                const replyToData = await apiManager.getHighlight(annotationData['references'][0])
+                replyTo = await parseHighlight(replyToData, momentFormat, apiManager)
+            }
+         }
+
         const excludedTags = ["via-lindylearn.io", "via annotations.lindylearn.io", "lindylearn"];
     
         return {
@@ -44,7 +50,7 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
             annotation: annotationData['text'],
             tags: annotationData['tags'].filter(tag => !excludedTags.includes(tag)),
             group: annotationData.name,
-            isReply
+            replyTo,
         }
     } catch (error) {
 
@@ -54,11 +60,14 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
 }
 
 
-const parseSyncResponse = async (data): Promise<Article[]> => {
+const parseSyncResponse = async (data, apiManager: ApiManager): Promise<Article[]> => {
     const momentFormat = get(settingsStore).dateTimeFormat;
     const groups = get(settingsStore).groups;
 
-    return data.reduce((result, annotationData) => {
+    // Group annotations per article
+    const articlesMap = await data.reduce(async (resultPromise, annotationData) => {
+        const result = await resultPromise;
+
         const url = annotationData['uri'];
         const md5Hash = md5(url);
 
@@ -80,16 +89,17 @@ const parseSyncResponse = async (data): Promise<Article[]> => {
             result[md5Hash] = { id: md5Hash, metadata: { title, url, author }, highlights: [], page_notes: [] };
         }
 
-        const annotation = parseHighlight(annotationData, momentFormat)
-        if (annotation.text) {
-            result[md5Hash].highlights.push(annotation);
-        } else if (!annotation.isReply) {
+        const annotation = await parseHighlight(annotationData, momentFormat, apiManager)
+        if (!annotation.text && !annotation.replyTo) {
             result[md5Hash].page_notes.push(annotation);
+        } else {
+            result[md5Hash].highlights.push(annotation);
         }
         
         return result;
     }, {});
 
+    return Object.values(articlesMap)
 }
 
 export default parseSyncResponse;
