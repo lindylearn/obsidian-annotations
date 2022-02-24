@@ -1,4 +1,5 @@
-import { Notice, Plugin, addIcon } from 'obsidian';
+import { moment } from "obsidian";
+import { Notice, Plugin, addIcon, TFile } from 'obsidian';
 import { SettingsTab } from '~/settingsTab';
 import { initialise, settingsStore } from '~/store';
 import { get } from 'svelte/store';
@@ -6,6 +7,7 @@ import SyncHypothesis from '~/sync/syncHypothesis';
 import hypothesisIcon from '~/assets/hypothesisIcon.svg'
 import FileManager from '~/fileManager';
 import ResyncDelFileModal from '~/modals/resyncDelFileModal';
+import { frontMatterDocType } from "~/utils/frontmatter"
 
 addIcon('hypothesisIcon', hypothesisIcon);
 
@@ -69,6 +71,24 @@ export default class HypothesisPlugin extends Plugin {
 		if (get(settingsStore).autoSyncInterval) {
 			this.startAutoSync();
 		}
+
+    	let statusBarItem = null;
+		this.registerEvent(this.app.workspace.on('file-open', (file: TFile | null) => {
+			if (statusBarItem) {
+				statusBarItem.detach()
+			}
+
+			if (file) {
+				const frontmatter = this.app.metadataCache.getFileCache(file).frontmatter;
+				if (frontmatter?.["doc_type"] === frontMatterDocType) {
+					// TODO update after syncs
+					statusBarItem = this.addStatusBarItem();
+
+					const lastSync = moment(get(settingsStore).lastSyncDate).fromNow()
+					statusBarItem.createEl("span", { text: `Last sync ${lastSync}` });
+				}
+			}
+		}));
 	}
 
 	async showResyncModal(): Promise<void> {
