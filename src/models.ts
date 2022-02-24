@@ -48,6 +48,7 @@ export type LocalHighlight = {
   text: string;
   annotation: string;
   tags: string[];
+  remote_state?: RemoteState;
 }
 
 export type RenderTemplate = {

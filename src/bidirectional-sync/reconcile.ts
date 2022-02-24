@@ -5,10 +5,10 @@ import { get } from 'svelte/store';
 import { settingsStore } from '~/store';
 
 
-export const reconcileArticle = (remoteArticle: Article, localArticle: LocalArticle): Article => {
+export const reconcileArticle = (remoteArticle: Article, localArticle: LocalArticle): LocalArticle => {
     if (!localArticle) {
         return {
-            ...remoteArticle,
+            ...localArticle,
             page_note: { ...remoteArticle.page_note, remote_state: RemoteState.REMOTE_ONLY },
             highlights: remoteArticle.highlights.map(h => ({ ...h, remote_state: RemoteState.REMOTE_ONLY }))
         }
@@ -16,22 +16,21 @@ export const reconcileArticle = (remoteArticle: Article, localArticle: LocalArti
 
     const reconciledPageNote = reconcileAnnotation(remoteArticle.page_note, localArticle.page_note, localArticle.updated_millis);
     const reconciledAnnotations = reconcileAnnotations(remoteArticle.highlights, localArticle.highlights, localArticle.updated_millis);
-    reconciledAnnotations.sort((a, b) => a.created > b.created ? -1 : 1 ) // TODO keep existing structure, only append?
 
     return {
-        ...remoteArticle,
+        ...localArticle,
         page_note: reconciledPageNote,
         highlights: reconciledAnnotations,
     }
 }
 
-const reconcileAnnotations = (remoteAnnotations: Highlights[], localAnnotations: LocalHighlight[], lastLocalUpdateMillis: number): Highlights[] => {
+const reconcileAnnotations = (remoteAnnotations: Highlights[], localAnnotations: LocalHighlight[], lastLocalUpdateMillis: number): LocalHighlight[] => {
     const localHighlightMap: {[id: string]: LocalHighlight} = localAnnotations.reduce((obj, highlight) => ({
         ...obj,
         [highlight.id]: highlight,
     }), {})
 
-    const reconciledHighlights: Highlights[] = [];
+    const reconciledHighlights: LocalHighlight[] = [];
     for (const remoteAnnotation of remoteAnnotations) {
         const localAnnotation = localHighlightMap[remoteAnnotation.id]
 
@@ -49,7 +48,7 @@ const reconcileAnnotations = (remoteAnnotations: Highlights[], localAnnotations:
     return reconciledHighlights;
 }
 
-const reconcileAnnotation = (remoteAnnotation: Highlights, localAnnotation: LocalHighlight, lastLocalUpdateMillis: number): Highlights => {
+const reconcileAnnotation = (remoteAnnotation: Highlights, localAnnotation: LocalHighlight, lastLocalUpdateMillis: number): LocalHighlight => {
     if (!localAnnotation && !remoteAnnotation) {
         return null;
     }
@@ -63,7 +62,7 @@ const reconcileAnnotation = (remoteAnnotation: Highlights, localAnnotation: Loca
     if (!remoteAnnotation) {
         // Not present locally
         return {
-            ...remoteAnnotation, 
+            ...localAnnotation, 
             remote_state: RemoteState.LOCAL_ONLY
         };
     }

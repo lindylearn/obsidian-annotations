@@ -54,7 +54,7 @@ export default class SyncHypothesis {
 
     private async syncArticles(articles: Article[], apiManager: ApiManager): Promise<void> {
         for (const article of articles) {
-            // if (article.metadata.url != "https://palladiummag.com/2021/10/11/the-triumph-and-terror-of-wang-huning/") {
+            // if (article.metadata.url != "https://markcarrigan.net/2022/02/09/our-entire-life-is-only-4000-weeks/") {
             //     continue
             // }
             try {
@@ -82,13 +82,14 @@ export default class SyncHypothesis {
         this.syncState.newHighlightsSynced += reconciledArticle.highlights.length;
     }
 
-    private async syncArticleWithLocalState(remoteArticle: Article, apiManager: ApiManager) {
+    private async syncArticleWithLocalState(remoteArticle: Article, apiManager: ApiManager): Promise<Article> {
         // Parse local file
         const localArticle = await this.fileManager.parseLocalArticle(remoteArticle);
         // console.log(remoteArticle, localArticle)
 
         // Compare local & remote state
         const reconciledArticle = reconcileArticle(remoteArticle, localArticle);
+        // reconciledAnnotations.sort((a, b) => a.created > b.created ? -1 : 1 ) // TODO keep existing structure, only append?
   
         // Print debug info
         const annotations = reconciledArticle.highlights
@@ -100,17 +101,29 @@ export default class SyncHypothesis {
             }), {})
         const nonStandardStateCount = annotationStateCount[RemoteState[RemoteState.SYNCHRONIZED]]
         if (nonStandardStateCount !== annotations.length) {
-          console.info(`${reconciledArticle.metadata.url} annotation state:`, annotationStateCount)
+          console.info(`${remoteArticle.metadata.url} annotation state:`, annotationStateCount)
         }
   
-        // Upload changes
+        // Upload annotation changes
         const annotationsToUpload = annotations
           .filter(h => h.remote_state === RemoteState.UPDATED_LOCAL)
         if (annotationsToUpload.length > 0) {
-          console.info(`${reconciledArticle.metadata.url}: Updating ${annotationsToUpload.length} annotations on Hypothesis:`, annotationsToUpload)
+          console.info(`${remoteArticle.metadata.url}: Updating ${annotationsToUpload.length} annotations on Hypothesis:`, annotationsToUpload)
           await Promise.all(annotationsToUpload.map(({id, annotation, tags}) => apiManager.updateAnnotation(id, annotation, tags)))
         }
 
-        return reconciledArticle;
+        // Create new page notes, 
+        const annotationsToCreate = annotations
+            .filter(h => h.remote_state === RemoteState.LOCAL_ONLY)
+        if (annotationsToCreate.length > 0) {
+            console.info(`${remoteArticle.metadata.url}: Creating ${annotationsToCreate.length} annotations on Hypothesis:`, annotationsToCreate)
+            await Promise.all(annotationsToCreate.map(({annotation, tags}) => apiManager.createPageNote(remoteArticle.metadata.url, annotation, tags)))
+        }
+
+        // TODO convert LocalHighlight to Highlight for updated / created annotations
+        return {
+            ...remoteArticle,
+            ...reconciledArticle,
+        } as unknown as Article
     }
 }
