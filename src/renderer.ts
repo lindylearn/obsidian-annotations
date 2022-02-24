@@ -18,14 +18,14 @@ export class Renderer {
   }
 
   render(entry: Article, isNew = true): string {
-    const { metadata , highlights, page_notes } = entry;
+    const { metadata , highlights, page_note } = entry;
 
     const annotationTimestamps = [...new Set(highlights.map(h => h.updated))].sort();
 
     const context: RenderTemplate = {
        ...metadata,
        highlights,
-       page_notes,
+       page_note,
        annotation_dates: annotationTimestamps,
     };
 

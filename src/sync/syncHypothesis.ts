@@ -6,7 +6,7 @@ import parseSyncResponse from '~/parser/parseSyncResponse';
 import SyncGroup from './syncGroup';
 import type FileManager from '~/fileManager';
 import { Article, Highlights, LocalHighlight, RemoteState } from '~/models';
-import { reconcileHighlights } from '~/bidirectional-sync/reconcileHighlights'
+import { reconcileArticle } from '~/bidirectional-sync/reconcile'
 
 
 export default class SyncHypothesis {
@@ -34,7 +34,8 @@ export default class SyncHypothesis {
         await this.syncGroup.startSync();
 
         //fetch highlights
-        const responseBody: [] = (!uri) ? await apiManager.getHighlights(get(settingsStore).lastSyncDate) : await apiManager.getHighlightWithUri(uri);
+        // get(settingsStore).lastSyncDate
+        const responseBody: [] = (!uri) ? await apiManager.getHighlights() : await apiManager.getHighlightWithUri(uri);
         const articles = await parseSyncResponse(responseBody);
 
         syncSessionStore.actions.setJobs(articles);
@@ -53,6 +54,9 @@ export default class SyncHypothesis {
 
     private async syncArticles(articles: Article[], apiManager: ApiManager): Promise<void> {
         for (const article of articles) {
+            // if (article.metadata.url != "https://palladiummag.com/2021/10/11/the-triumph-and-terror-of-wang-huning/") {
+            //     continue
+            // }
             try {
                 syncSessionStore.actions.startJob(article);
 
@@ -68,7 +72,7 @@ export default class SyncHypothesis {
     }
 
     private async syncArticle(article: Article, apiManager: ApiManager): Promise<void> {
-        const reconciledArticle = await this.reconcileArticle(article, apiManager);
+        const reconciledArticle = await this.syncArticleWithLocalState(article, apiManager);
 
         const createdNewArticle = await this.fileManager.createOrUpdate(reconciledArticle);
 
@@ -78,29 +82,32 @@ export default class SyncHypothesis {
         this.syncState.newHighlightsSynced += reconciledArticle.highlights.length;
     }
 
-    private async reconcileArticle(remoteArticle: Article, apiManager: ApiManager) {
+    private async syncArticleWithLocalState(remoteArticle: Article, apiManager: ApiManager) {
         // Parse local file
-        const [localHighlights, localUpdateTimeMillis] = await this.fileManager.parseLocalHighlights(remoteArticle);
+        const localArticle = await this.fileManager.parseLocalArticle(remoteArticle);
+        // console.log(remoteArticle, localArticle)
 
         // Compare local & remote state
-        const reconciledArticle = reconcileHighlights(remoteArticle, localHighlights, localUpdateTimeMillis);
-        reconciledArticle.highlights.sort((a, b) => a.created > b.created ? -1 : 1 ) // TODO keep existing structure, only append?
+        const reconciledArticle = reconcileArticle(remoteArticle, localArticle);
   
         // Print debug info
-        const annotationStateCount = reconciledArticle.highlights.reduce((obj, annotation) => ({
-          ...obj,
-          [RemoteState[annotation.remote_state]]: (obj[RemoteState[annotation.remote_state]] || 0) + 1
-        }), {})
+        const annotations = reconciledArticle.highlights
+            .concat(reconciledArticle.page_note ? [reconciledArticle.page_note] : [])
+        const annotationStateCount = annotations
+            .reduce((obj, annotation) => ({
+                ...obj,
+                [RemoteState[annotation.remote_state]]: (obj[RemoteState[annotation.remote_state]] || 0) + 1
+            }), {})
         const nonStandardStateCount = annotationStateCount[RemoteState[RemoteState.SYNCHRONIZED]]
-        if (nonStandardStateCount !== reconciledArticle.highlights.length && reconciledArticle.highlights.length !== 0) {
+        if (nonStandardStateCount !== annotations.length) {
           console.info(`${reconciledArticle.metadata.url} annotation state:`, annotationStateCount)
         }
   
         // Upload changes
-        const annotationsToUpload = reconciledArticle.highlights
+        const annotationsToUpload = annotations
           .filter(h => h.remote_state === RemoteState.UPDATED_LOCAL)
         if (annotationsToUpload.length > 0) {
-          console.info(`${reconciledArticle.metadata.url}: Updating ${annotationsToUpload.length} annotations on Hypothesis.`)
+          console.info(`${reconciledArticle.metadata.url}: Updating ${annotationsToUpload.length} annotations on Hypothesis:`, annotationsToUpload)
           await Promise.all(annotationsToUpload.map(({id, annotation, tags}) => apiManager.updateAnnotation(id, annotation, tags)))
         }
 

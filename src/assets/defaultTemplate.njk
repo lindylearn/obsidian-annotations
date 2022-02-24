@@ -5,6 +5,12 @@
 - Link: {{url}}
 - Annotated on: {% for date in annotation_dates %}[[{{ date }}]] {% endfor %}
 
+## Page Note
+{{ page_note.annotation }}
+{% if page_note.tags | length -%}
+{% for tag in page_note.tags %}#{{ tag | replace(" ", "-")}} {% endfor %}
+{%- endif %}
+
 ## Annotations
 {% for highlight in highlights %}
 > {{ highlight.text }} []({{highlight.incontext}})

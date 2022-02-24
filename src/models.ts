@@ -2,7 +2,7 @@ export type Article = {
   id: string;
   metadata: Metadata;
   highlights: Highlights[];
-  page_notes: Highlights[];
+  page_note: Highlights;
 };
 
 export type Metadata = {
@@ -28,11 +28,18 @@ export type Highlights = {
 
 export enum RemoteState {
   SYNCHRONIZED,
-  // LOCAL_ONLY,
+  LOCAL_ONLY,
   REMOTE_ONLY,
   UPDATED_LOCAL,
   UPDATED_REMOTE,
   // CONFLICT,
+}
+
+export type LocalArticle = {
+  id: string;
+  highlights: LocalHighlight[];
+  page_note: LocalHighlight;
+  updated_millis: number;
 }
 
 export type LocalHighlight = {
@@ -48,7 +55,7 @@ export type RenderTemplate = {
   author: string;
   url: string;
   highlights: Highlights[];
-  page_notes: Highlights[];
+  page_note: Highlights;
   annotation_dates: string[];
 };
 

@@ -44,7 +44,8 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
             created: moment(annotationData['created']).format(momentFormat),
             updated: moment(annotationData['updated']).format(momentFormat),
             text: highlightText && cleanTextSelectorHighlight(highlightText),
-            incontext: annotationData['links']['incontext'],
+            // For replies, incontext link points to parent. So append actual annotationId for parsing in parseNotes.ts 
+            incontext: `${annotationData['links']['incontext']}#${annotationData['id']}`,
             user: annotationData['user'],
             annotation: annotationData['text'],
             tags: annotationData['tags'].filter(tag => !excludedTags.includes(tag)),
@@ -97,12 +98,15 @@ const parseSyncResponse = (data): Article[] => {
         const author = parseAuthorUrl(url);
         // Set article metadata, if not already set by previous annotation
         if (!result[md5Hash]) {
-            result[md5Hash] = { id: md5Hash, metadata: { title, url, author }, highlights: [], page_notes: [] };
+            result[md5Hash] = { id: md5Hash, metadata: { title, url, author }, highlights: [], page_note: null };
         }
 
         const annotation = parseHighlight(annotationData, momentFormat)
         if (!annotation.text && !annotation.isReply) {
-            result[md5Hash].page_notes.push(annotation);
+            // Only show the first page note to make editing simpler
+            if (!result[md5Hash].page_note) {
+                result[md5Hash].page_note = annotation;
+            }
         } else {
             result[md5Hash].highlights.push(annotation);
         }

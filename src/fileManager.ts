@@ -3,8 +3,8 @@ import { get } from 'svelte/store';
 import { Renderer } from '~/renderer';
 import { settingsStore } from '~/store';
 import { sanitizeTitle } from '~/utils/sanitizeTitle';
-import type { Article, LocalHighlight } from '~/models';
-import { parseFileAnnotations } from '~/bidirectional-sync/parseNote';
+import type { Article, LocalArticle } from '~/models';
+import { parseFilePageNote ,parseFileAnnotations } from '~/bidirectional-sync/parseNote';
 
 const articleFolderPath = (article: Article): string => {
   const settings = get(settingsStore);
@@ -40,7 +40,7 @@ export default class FileManager {
     let createdNewArticle = false;
 
     if (!(await this.vault.adapter.exists(folderPath))) {
-      console.info(`Folder ${folderPath} not found. Will be created`);
+      console.debug(`Folder ${folderPath} not found. Will be created`);
 
       await this.createFolder(folderPath);
     }
@@ -63,20 +63,27 @@ export default class FileManager {
     return createdNewArticle;
   }
 
-  public async parseLocalHighlights(article: Article): Promise<[LocalHighlight[], number]> {
+  public async parseLocalArticle(article: Article): Promise<LocalArticle> {
     const folderPath = articleFolderPath(article);
     const fileName = `${sanitizeTitle(article.metadata.title)}.md`;
     const filePath = `${folderPath}/${fileName}`
 
     if (!(await this.vault.adapter.exists(filePath))) {
-      return [[], null];
+      return null;
     }
 
     const localUpdateTimeMillis = (await this.vault.adapter.stat(filePath)).mtime;
     const existingContent = await this.vault.adapter.read(filePath);
+
+    const existingPageNote = parseFilePageNote(existingContent);
     const existingAnnotations = parseFileAnnotations(existingContent);
 
-    return [existingAnnotations, localUpdateTimeMillis];
+    return {
+      id: article.id,
+      page_note: existingPageNote,
+      highlights: existingAnnotations,
+      updated_millis: localUpdateTimeMillis,
+    }
   }
 
 }
