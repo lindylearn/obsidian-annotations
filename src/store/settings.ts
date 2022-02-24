@@ -32,7 +32,7 @@ const DEFAULT_SETTINGS: Settings = {
   template: defaultTemplate,
   syncOnBoot: false,
   autoSyncInterval: 0,
-  dateTimeFormat: 'YYYY-MM-DD HH:mm:ss',
+  dateTimeFormat: 'YYYY-MM-DD',
   history: {
     totalArticles: 0,
     totalHighlights: 0,

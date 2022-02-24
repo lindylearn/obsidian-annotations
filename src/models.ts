@@ -23,15 +23,33 @@ export type Highlights = {
   tags: string[];
   group: string;
   isReply: boolean;
+  remote_state?: RemoteState;
 };
 
+export enum RemoteState {
+  SYNCHRONIZED,
+  // LOCAL_ONLY,
+  REMOTE_ONLY,
+  UPDATED_LOCAL,
+  UPDATED_REMOTE,
+  // CONFLICT,
+}
+
+export type LocalHighlight = {
+  id?: string;
+  // updated: string;
+  text: string;
+  annotation: string;
+  tags: string[];
+}
+
 export type RenderTemplate = {
-  is_new_article: boolean;
   title: string;
   author: string;
   url: string;
   highlights: Highlights[];
   page_notes: Highlights[];
+  annotation_dates: string[];
 };
 
 export type Group = {

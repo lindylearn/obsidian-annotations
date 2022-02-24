@@ -3,7 +3,8 @@ import { get } from 'svelte/store';
 import { Renderer } from '~/renderer';
 import { settingsStore } from '~/store';
 import { sanitizeTitle } from '~/utils/sanitizeTitle';
-import type { Article } from '~/models';
+import type { Article, LocalHighlight } from '~/models';
+import { parseFileAnnotations } from '~/bidirectional-sync/parseNote';
 
 const articleFolderPath = (article: Article): string => {
   const settings = get(settingsStore);
@@ -39,30 +40,43 @@ export default class FileManager {
     let createdNewArticle = false;
 
     if (!(await this.vault.adapter.exists(folderPath))) {
-
       console.info(`Folder ${folderPath} not found. Will be created`);
+
       await this.createFolder(folderPath);
     }
 
     if (!(await this.vault.adapter.exists(filePath))) {
+      console.debug(`Document ${filePath} not found. Will be created`);
 
-      console.info(`Document ${filePath} not found. Will be created`);
       const content = this.renderer.render(article);
       await this.createFile(filePath, content);
       createdNewArticle = true;
       await settingsStore.actions.addSyncedFile({filename: fileName, uri: encodeURIComponent(article.metadata.url)});
-    }
-    else {
 
-      console.info(`Document ${article.metadata.title} found. Loading content and updating highlights`);
+    } else {
+      console.debug(`Document ${article.metadata.title} found. Reconciling local & remote annotations`);
+
       const content = this.renderer.render(article, false);
-      const fileContent = await this.vault.adapter.read(filePath);
-      const contentToSave = fileContent + content;
-      await this.vault.adapter.write(filePath, contentToSave);
-
+      await this.vault.adapter.write(filePath, content);
     }
 
     return createdNewArticle;
+  }
+
+  public async parseLocalHighlights(article: Article): Promise<[LocalHighlight[], number]> {
+    const folderPath = articleFolderPath(article);
+    const fileName = `${sanitizeTitle(article.metadata.title)}.md`;
+    const filePath = `${folderPath}/${fileName}`
+
+    if (!(await this.vault.adapter.exists(filePath))) {
+      return [[], null];
+    }
+
+    const localUpdateTimeMillis = (await this.vault.adapter.stat(filePath)).mtime;
+    const existingContent = await this.vault.adapter.read(filePath);
+    const existingAnnotations = parseFileAnnotations(existingContent);
+
+    return [existingAnnotations, localUpdateTimeMillis];
   }
 
 }

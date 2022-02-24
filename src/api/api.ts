@@ -49,7 +49,7 @@ export default class ApiManager {
 
   async getHighlights(lastSyncDate?: Date) {
     // let offset = 0;
-    let maxResult = 1000;
+    let maxResult = 200;
     let initialQuery = true;
     let result = [];
     let response;
@@ -61,7 +61,7 @@ export default class ApiManager {
     for (let resultCount = 0; resultCount < maxResult;) {
 
       try {
-        response = await fetch(`${this.baseUrl}/search?user=${this.userid}&offset=${resultCount}&limit=${limit}&sort=updated&order=asc` + queryDate, { headers: { ...this.getHeaders() } })
+        response = await fetch(`${this.baseUrl}/search?user=${this.userid}&offset=${resultCount}&limit=${limit}&sort=updated&order=desc` + queryDate, { headers: { ...this.getHeaders() } })
       }
       catch (e) {
         new Notice('Error occurs. Please check your API token and try again.')
@@ -162,4 +162,22 @@ export default class ApiManager {
     return result;
   }
 
+  async updateAnnotation(annotationId: string, text: string, tags: string[]) {
+    let response;
+
+    tags = ["via annotations.lindylearn.io"].concat(tags)
+
+    try {
+      response = await fetch(`${this.baseUrl}/annotations/${annotationId}`, 
+        { method: 'PATCH', headers: { ...this.getHeaders() }, body: JSON.stringify({text, tags}) }
+      )
+    }
+    catch (e) {
+      new Notice('Error occurs. Please check your API token and try again.')
+      console.log("Failed to update annotation: ", e);
+      return;
+    }
+
+    // TODO use returned state?
+  }
 }

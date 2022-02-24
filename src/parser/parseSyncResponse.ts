@@ -47,7 +47,7 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
             incontext: annotationData['links']['incontext'],
             user: annotationData['user'],
             annotation: annotationData['text'],
-            tags: annotationData['tags'],
+            tags: annotationData['tags'].filter(tag => !excludedTags.includes(tag)),
             group: annotationData.name,
             isReply,
         }
@@ -112,5 +112,7 @@ const parseSyncResponse = (data): Article[] => {
 
     return Object.values(articlesMap)
 }
+
+export const excludedTags = ["via-lindylearn.io", "via annotations.lindylearn.io", "lindylearn"]
 
 export default parseSyncResponse;
