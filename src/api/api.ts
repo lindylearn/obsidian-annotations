@@ -99,4 +99,36 @@ export default class ApiManager {
       console.error(e);
     }
   }
+
+  async updateAnnotation(annotationId: string, text: string, tags: string[]) {
+    tags = ["via annotations.lindylearn.io"].concat(tags)
+
+    try {
+      const response = await axios.patch(`${this.baseUrl}/annotations/${annotationId}`, 
+        { text, tags },
+        { headers: this.getHeaders() }
+      )
+      return response.data
+    }
+    catch (e) {
+      new Notice('Failed to update Hypothes.is annotations. Please check your API token and try again.')
+      console.error(e);
+    }
+  }
+
+  async createPageNote(uri: string, text: string, tags: string[]) {
+    tags = ["via annotations.lindylearn.io"].concat(tags)
+
+    try {
+      const response = await axios.post(`${this.baseUrl}/annotations`, 
+        { uri, text, tags },
+        { headers: this.getHeaders() }
+      )
+      return response.data
+    }
+    catch (e) {
+      new Notice('Failed to update Hypothes.is annotations. Please check your API token and try again.')
+      console.error(e);
+    }
+  }
 }
