@@ -67,7 +67,7 @@ const reconcileAnnotation = (remoteAnnotation: Highlights, localAnnotation: Loca
         };
     }
     if (
-        remoteAnnotation.annotation === localAnnotation.annotation && 
+        remoteAnnotation.annotation.trim() === localAnnotation.annotation.trim() && 
         remoteAnnotation.tags.map(t => t.replaceAll("-", " ")).toString() === localAnnotation.tags.map(t => t.replaceAll("-", " ")).toString()
     ) {
         // No change

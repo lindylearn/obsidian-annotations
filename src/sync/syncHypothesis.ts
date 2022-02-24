@@ -54,7 +54,7 @@ export default class SyncHypothesis {
 
     private async syncArticles(articles: Article[], apiManager: ApiManager): Promise<void> {
         for (const article of articles) {
-            // if (article.metadata.url != "https://markcarrigan.net/2022/02/09/our-entire-life-is-only-4000-weeks/") {
+            // if (article.metadata.url != "http://kernelmag.io/pieces/a-founders-guide") {
             //     continue
             // }
             try {

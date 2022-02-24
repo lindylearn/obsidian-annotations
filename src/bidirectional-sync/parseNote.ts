@@ -73,8 +73,7 @@ const parseAnnotationText = (text: string): LocalHighlight => {
         } else if (line.startsWith("- ") || line.startsWith("* ")) {
             const lineText = line
                 .slice(2) // bullet point styling
-                .replace("\n", "") // linebreak at end
-                .trim();
+                .replace("\n", ""); // linebreak at end
              
             noteBulletPoints.push(lineText);
         }

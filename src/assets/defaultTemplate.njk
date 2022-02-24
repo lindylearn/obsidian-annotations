@@ -15,7 +15,7 @@
 {% for highlight in highlights %}
 > {{ highlight.text }} []({{highlight.incontext}})
 {% if highlight.annotation -%}
-{% set lines = highlight.annotation.split("\n\n") %}{% for line in lines %}- {{ line }}{{ "\n" }}{% endfor %}
+{% set lines = highlight.annotation.split("\n\n") %}{% for line in lines %}- {{ line | replace("\n", " ") }}{{ "\n" }}{% endfor %}
 {%- endif %}{% if highlight.tags | length -%}
 - {% for tag in highlight.tags %}#{{ tag | replace(" ", "-")}} {% endfor %}
 {%- endif %}
