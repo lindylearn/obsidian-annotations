@@ -30,8 +30,8 @@ const DEFAULT_SETTINGS: Settings = {
   highlightsFolder: '/',
   isConnected: false,
   template: defaultTemplate,
-  syncOnBoot: false,
-  autoSyncInterval: 0,
+  syncOnBoot: true,
+  autoSyncInterval: 5,
   dateTimeFormat: 'YYYY-MM-DD',
   history: {
     totalArticles: 0,

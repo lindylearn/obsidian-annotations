@@ -32,22 +32,33 @@ export class SettingsTab extends PluginSettingTab {
 
   public async display(): Promise<void> {
     const { containerEl } = this;
-
     containerEl.empty();
 
+    this.insertGroupHeading("Annotation synchronization")
     if (get(settingsStore).isConnected) {
       this.disconnect();
     } else {
       this.connect();
     }
     this.autoSyncInterval();
+    this.syncOnBoot();
+    this.bidirectionalSync();
+
+    this.insertGroupHeading("File structure")
     this.highlightsFolder();
     this.folderPath();
-    this.syncOnBoot();
+
+    this.insertGroupHeading("Annotation format")
     this.dateFormat();
-    this.template();
+    // this.template();
+
+    this.insertGroupHeading("Other")
     this.manageGroups();
     this.resetSyncHistory();
+  }
+
+  private insertGroupHeading(name: string) {
+    new Setting(this.containerEl).setName(name).setHeading()
   }
 
   private disconnect(): void {
@@ -103,8 +114,8 @@ export class SettingsTab extends PluginSettingTab {
 
   private autoSyncInterval(): void {
     new Setting(this.containerEl)
-    .setName('Auto sync in interval (minutes)')
-    .setDesc('Sync every X minutes. To disable auto sync, specify negative value or zero (default)')
+    .setName('Periodic sync interval')
+    .setDesc('Fetch new annotations every X minutes. Specify 0 to only fetch annotations when you click the sidebar icon.')
     .addText((text) => {
       text
         .setPlaceholder(String(0))
@@ -131,8 +142,8 @@ export class SettingsTab extends PluginSettingTab {
 
   private highlightsFolder(): void {
     new Setting(this.containerEl)
-      .setName('Highlights folder location')
-      .setDesc('Vault folder to use for writing hypothesis highlights')
+      .setName('Annotations folder location')
+      .setDesc('Vault folder to create the annotations files in.')
       .addDropdown((dropdown) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const files = (this.app.vault.adapter as any).files;
@@ -152,7 +163,6 @@ export class SettingsTab extends PluginSettingTab {
   }
 
   private template(): void {
-
     const descFragment = document
       .createRange()
       .createContextualFragment(templateInstructions);
@@ -182,7 +192,7 @@ export class SettingsTab extends PluginSettingTab {
   private folderPath(): void {
     new Setting(this.containerEl)
     .setName('Use domain folders')
-    .setDesc('Group generated files into folders based on the domain of the annotated URL')
+    .setDesc('Group generated files into folders based on the domain of the annotated URL. Files can be freely renamed and moved around after they are created.')
     .addToggle((toggle) =>
       toggle
         .setValue(get(settingsStore).useDomainFolders)
@@ -196,7 +206,22 @@ export class SettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName('Sync on Startup')
       .setDesc(
-        'Automatically sync new highlights when Obsidian starts'
+        'Automatically sync new annotations when opening Obsidian'
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(get(settingsStore).syncOnBoot)
+          .onChange(async (value) => {
+            await settingsStore.actions.setSyncOnBoot(value);
+          })
+      );
+  }
+
+  private bidirectionalSync(): void {
+    new Setting(this.containerEl)
+      .setName('Bi-directional sync')
+      .setDesc(
+        'Whether to update your Hypothes.is annotations when you modify your local annotations files (highly recommended).'
       )
       .addToggle((toggle) =>
         toggle
@@ -229,11 +254,11 @@ export class SettingsTab extends PluginSettingTab {
       .createContextualFragment(datetimeInstructions);
 
     new Setting(this.containerEl)
-      .setName('Date & time format')
+      .setName('Date format')
       .setDesc(descFragment)
       .addText((text) => {
         text
-          .setPlaceholder('YYYY-MM-DD HH:mm:ss')
+          .setPlaceholder('YYYY-MM-DD')
           .setValue(get(settingsStore).dateTimeFormat)
           .onChange(async (value) => {
             await settingsStore.actions.setDateTimeFormat(value);
@@ -291,6 +316,17 @@ export class SettingsTab extends PluginSettingTab {
             await manageGroupsModal.waitForClose;
             this.display(); // rerender
           });
+      });
+  }
+
+  private about(): void {
+    new Setting(this.containerEl)
+      .setName('About')
+      .setDesc(
+        ''
+      )
+      .addButton((bt) => {
+        bt.buttonEl.outerHTML = `<a href="https://www.buymeacoffee.com/hadynz"><img style="height: 35px;" src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=hadynz&button_colour=BD5FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00"></a>`;
       });
   }
 }
