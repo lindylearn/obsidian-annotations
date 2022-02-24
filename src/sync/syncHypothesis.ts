@@ -21,22 +21,38 @@ export default class SyncHypothesis {
     }
 
     async startSync(uri?: string) {
+        const lastSyncDate = get(settingsStore).lastSyncDate
         this.syncState = { newArticlesSynced: 0, newHighlightsSynced: 0 };
 
-        const token = await get(settingsStore).token;
-        const userid = await get(settingsStore).user;
+        const token = get(settingsStore).token;
+        const userid = get(settingsStore).user;
 
         const apiManager = new ApiManager(token, userid);
 
         syncSessionStore.actions.startSync();
 
-        //fetch groups
+        // Fetch groups
         await this.syncGroup.startSync();
 
-        //fetch highlights
-        // get(settingsStore).lastSyncDate
-        const responseBody: [] = (!uri) ? await apiManager.getHighlights() : await apiManager.getHighlightWithUri(uri);
-        const articles = await parseSyncResponse(responseBody);
+        // Fetch highlights
+        let articles = [];
+        if (uri) {
+            console.info(`Syncing annotations for URL ${uri}...`)
+            const articleAnnotations = await apiManager.getHighlightWithUri(uri)
+            articles = parseSyncResponse(articleAnnotations);
+        } else if (!lastSyncDate) {
+            console.info(`Syncing all user annotations...`)
+            const allAnnotations = await apiManager.getHighlights()
+            articles = parseSyncResponse(allAnnotations);
+        } else {
+            console.info(`Fetching new annotations since ${lastSyncDate}...`)
+            const newAnnoations = await apiManager.getHighlights(lastSyncDate)
+            const changedArticles = parseSyncResponse(newAnnoations)
+
+            console.info(`Fetching all annotations for the ${changedArticles.length} changed articles...`)
+            const allAnnotations = (await Promise.all(changedArticles.map(async article => apiManager.getHighlightWithUri(article.metadata.url)))).flat()
+            articles = parseSyncResponse(allAnnotations);
+        }
 
         syncSessionStore.actions.setJobs(articles);
 
@@ -44,6 +60,7 @@ export default class SyncHypothesis {
             await this.syncArticles(articles, apiManager);
         }
 
+        console.info(`Annotations sync complete. Found ${this.syncState.newHighlightsSynced} annotations across ${this.syncState.newArticlesSynced} articles.`)
         syncSessionStore.actions.completeSync({
             newArticlesCount: this.syncState.newArticlesSynced,
             newHighlightsCount: this.syncState.newHighlightsSynced,
@@ -99,8 +116,7 @@ export default class SyncHypothesis {
                 ...obj,
                 [RemoteState[annotation.remote_state]]: (obj[RemoteState[annotation.remote_state]] || 0) + 1
             }), {})
-        const nonStandardStateCount = annotationStateCount[RemoteState[RemoteState.SYNCHRONIZED]]
-        if (nonStandardStateCount !== annotations.length) {
+        if (Object.keys(annotationStateCount).filter(state => ![RemoteState[RemoteState.SYNCHRONIZED], RemoteState[RemoteState.REMOTE_ONLY]].includes(state)).length > 0) {
           console.info(`${remoteArticle.metadata.url} annotation state:`, annotationStateCount)
         }
   
