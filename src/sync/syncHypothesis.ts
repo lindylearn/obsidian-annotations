@@ -5,7 +5,7 @@ import ApiManager from '~/api/api';
 import parseSyncResponse from '~/parser/parseSyncResponse';
 import SyncGroup from './syncGroup';
 import type FileManager from '~/fileManager';
-import { Article, Highlights, LocalHighlight, RemoteState } from '~/models';
+import { Article, RemoteState } from '~/models';
 import { reconcileArticle } from '~/bidirectional-sync/reconcile'
 
 
@@ -91,7 +91,7 @@ export default class SyncHypothesis {
     private async syncArticle(article: Article, apiManager: ApiManager): Promise<void> {
         const reconciledArticle = await this.syncArticleWithLocalState(article, apiManager);
 
-        const createdNewArticle = await this.fileManager.createOrUpdate(reconciledArticle);
+        const createdNewArticle = await this.fileManager.saveArticle(reconciledArticle);
 
         if (createdNewArticle) {
             this.syncState.newArticlesSynced += 1;
@@ -101,7 +101,7 @@ export default class SyncHypothesis {
 
     private async syncArticleWithLocalState(remoteArticle: Article, apiManager: ApiManager): Promise<Article> {
         // Parse local file
-        const localArticle = await this.fileManager.parseLocalArticle(remoteArticle);
+        const localArticle = await this.fileManager.readArticle(remoteArticle);
         // console.log(remoteArticle, localArticle)
 
         // Compare local & remote state

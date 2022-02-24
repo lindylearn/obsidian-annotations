@@ -18,7 +18,7 @@ export default class HypothesisPlugin extends Plugin {
 
 		await initialise(this);
 
-		const fileManager = new FileManager(this.app.vault);
+		const fileManager = new FileManager(this.app.vault, this.app.metadataCache);
 
 		this.syncHypothesis = new SyncHypothesis(fileManager);
 
@@ -82,7 +82,6 @@ export default class HypothesisPlugin extends Plugin {
 	}
 
 	async startSync(): Promise<void> {
-		console.log('Start syncing...')
 		await this.syncHypothesis.startSync();
 	}
 
