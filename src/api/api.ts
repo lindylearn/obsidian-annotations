@@ -121,7 +121,7 @@ export default class ApiManager {
 
     try {
       const response = await axios.post(`${this.baseUrl}/annotations`, 
-        { uri, text, tags },
+        { uri, text, tags, group: "__world__" },
         { headers: this.getHeaders() }
       )
       return response.data
