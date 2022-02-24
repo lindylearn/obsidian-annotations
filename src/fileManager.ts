@@ -82,7 +82,7 @@ export default class FileManager {
       id: article.id,
       page_note: existingPageNote,
       highlights: existingAnnotations,
-      updated_millis: localUpdateTimeMillis,
+      updated: new Date(localUpdateTimeMillis),
     }
   }
 

@@ -1,3 +1,4 @@
+import { moment } from 'obsidian';
 import nunjucks from 'nunjucks';
 import { get } from 'svelte/store';
 import { settingsStore } from '~/store';
@@ -20,7 +21,10 @@ export class Renderer {
   render(entry: Article, isNew = true): string {
     const { metadata , highlights, page_note } = entry;
 
-    const annotationTimestamps = [...new Set(highlights.map(h => h.updated))].sort();
+    const momentFormat = get(settingsStore).dateTimeFormat;
+    const annotationTimestamps = [...new Set(highlights.map(h => moment(h.updated).format(momentFormat)))].sort();
+
+    // TODO format timestamps on individual annotations
 
     const context: RenderTemplate = {
        ...metadata,

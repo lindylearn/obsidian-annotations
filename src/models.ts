@@ -14,8 +14,8 @@ export type Metadata = {
 
 export type Highlights = {
   id?: string;
-  created: string;
-  updated: string;
+  created: Date;
+  updated: Date;
   text: string;
   incontext: string;
   user: string;
@@ -39,7 +39,7 @@ export type LocalArticle = {
   id: string;
   highlights: LocalHighlight[];
   page_note: LocalHighlight;
-  updated_millis: number;
+  updated: Date;
 }
 
 export type LocalHighlight = {

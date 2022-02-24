@@ -23,7 +23,7 @@ const parseTitleFromUrl = (url: string) => {
     return pathname.replaceAll('/', '-');
 }
 
-const parseHighlight = (annotationData, momentFormat: string): Highlights => {
+const parseHighlight = (annotationData): Highlights => {
     try {   
         // Get highlighted text or reply
         let isReply, highlightText = null;
@@ -41,8 +41,8 @@ const parseHighlight = (annotationData, momentFormat: string): Highlights => {
   
         return {
             id: annotationData['id'],
-            created: moment(annotationData['created']).format(momentFormat),
-            updated: moment(annotationData['updated']).format(momentFormat),
+            created: new Date(annotationData['created']),
+            updated: new Date(annotationData['updated']),
             text: highlightText && cleanTextSelectorHighlight(highlightText),
             // For replies, incontext link points to parent. So append actual annotationId for parsing in parseNotes.ts 
             incontext: `${annotationData['links']['incontext']}#${annotationData['id']}`,
@@ -75,7 +75,6 @@ const cleanTextSelectorHighlight = (text: string): string => {
 
 
 const parseSyncResponse = (data): Article[] => {
-    const momentFormat = get(settingsStore).dateTimeFormat;
     const groups = get(settingsStore).groups;
 
     // Group annotations per article
@@ -101,7 +100,7 @@ const parseSyncResponse = (data): Article[] => {
             result[md5Hash] = { id: md5Hash, metadata: { title, url, author }, highlights: [], page_note: null };
         }
 
-        const annotation = parseHighlight(annotationData, momentFormat)
+        const annotation = parseHighlight(annotationData)
         if (!annotation.text && !annotation.isReply) {
             // Only show the first page note to make editing simpler
             if (!result[md5Hash].page_note) {
