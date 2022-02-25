@@ -4,9 +4,7 @@ import ApiManager from '~/api/api';
 import parseGroupsResponse from '~/parser/parseGroupResponse';
 
 export default class SyncGroup {
-
     async startSync() {
-
         const token = await get(settingsStore).token;
         const userid = await get(settingsStore).user;
 
@@ -21,7 +19,7 @@ export default class SyncGroup {
         const mergedGroups = [...currentGroups, ...fetchedGroups];
         const set = new Set();
 
-        const unionGroups = mergedGroups.filter(item => {
+        const unionGroups = mergedGroups.filter((item) => {
             if (!set.has(item.id)) {
                 set.add(item.id);
                 return true;
@@ -31,5 +29,4 @@ export default class SyncGroup {
 
         await settingsStore.actions.setGroups(unionGroups);
     }
-
 }

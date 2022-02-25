@@ -1,6 +1,6 @@
-import { App, Modal } from "obsidian";
-import type { TokenManager } from "~/store/tokenManager";
-import ApiTokenModalContent from "./apiTokenModal.svelte";
+import { App, Modal } from 'obsidian';
+import type { TokenManager } from '~/store/tokenManager';
+import ApiTokenModalContent from './apiTokenModal.svelte';
 
 export default class ApiTokenModal extends Modal {
     public waitForClose: Promise<void>;
@@ -16,7 +16,7 @@ export default class ApiTokenModal extends Modal {
             (resolve) => (this.resolvePromise = resolve)
         );
 
-        this.titleEl.innerText = "Enter Hypothesis API token";
+        this.titleEl.innerText = 'Enter Hypothesis API token';
 
         this.modalContent = new ApiTokenModalContent({
             target: this.contentEl,

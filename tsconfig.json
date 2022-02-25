@@ -1,17 +1,15 @@
 {
-  "extends": "@tsconfig/svelte/tsconfig.json",
-  "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["node_modules/*"],
-  "compilerOptions": {
-    "types": ["node", "svelte"],
-    "baseUrl": ".",
-    "paths": {
-      "src": ["src/*", "tests/*"],
-      "~/*": ["src/*"]
+    "extends": "@tsconfig/svelte/tsconfig.json",
+    "include": ["src/**/*", "tests/**/*"],
+    "exclude": ["node_modules/*"],
+    "compilerOptions": {
+        "types": ["node", "svelte"],
+        "baseUrl": ".",
+        "paths": {
+            "src": ["src/*", "tests/*"],
+            "~/*": ["src/*"]
+        },
+        "lib": ["es2021"]
     },
-    "lib": [
-      "es2021"
-    ]
-  },
-  "esModuleInterop": true
+    "esModuleInterop": true
 }

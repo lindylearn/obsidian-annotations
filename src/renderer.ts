@@ -7,37 +7,43 @@ import defaultMetadataTemplate from '~/assets/defaultMetadataTemplate.njk';
 import defaultAnnotationsTemplate from '~/assets/defaultAnnotationsTemplate.njk';
 
 export class Renderer {
-  constructor() {
-    nunjucks.configure({ autoescape: false });
-  }
-
-  validate(template: string): boolean {
-    try {
-      nunjucks.renderString(template, {});
-      return true;
-    } catch (error) {
-      return false;
+    constructor() {
+        nunjucks.configure({ autoescape: false });
     }
-  }
 
-  render(entry: Article, isNew = true): string {
-    const { metadata , highlights, page_note } = entry;
+    validate(template: string): boolean {
+        try {
+            nunjucks.renderString(template, {});
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
 
-    const momentFormat = get(settingsStore).dateTimeFormat;
-    const annotationTimestamps = [...new Set(highlights.map(h => moment(h.updated).format(momentFormat)))].sort();
+    render(entry: Article, isNew = true): string {
+        const { metadata, highlights, page_note } = entry;
 
-    // TODO format timestamps on individual annotations
+        const momentFormat = get(settingsStore).dateTimeFormat;
+        const annotationTimestamps = [
+            ...new Set(
+                highlights.map((h) => moment(h.updated).format(momentFormat))
+            ),
+        ].sort();
 
-    const context: RenderTemplate = {
-       ...metadata,
-       highlights,
-       page_note,
-       annotation_dates: annotationTimestamps,
-    };
+        // TODO format timestamps on individual annotations
 
-    const metadataTemplate = get(settingsStore).customMetadataTemplate || defaultMetadataTemplate;
-    const template = metadataTemplate + defaultAnnotationsTemplate;
-    const content = nunjucks.renderString(template, context);
-    return content;
-  }
+        const context: RenderTemplate = {
+            ...metadata,
+            highlights,
+            page_note,
+            annotation_dates: annotationTimestamps,
+        };
+
+        const metadataTemplate =
+            get(settingsStore).customMetadataTemplate ||
+            defaultMetadataTemplate;
+        const template = metadataTemplate + defaultAnnotationsTemplate;
+        const content = nunjucks.renderString(template, context);
+        return content;
+    }
 }

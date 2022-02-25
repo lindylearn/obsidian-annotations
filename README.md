@@ -6,9 +6,9 @@ Obsidian Hypothesis (Community Plugin) is an unofficial plugin to synchronize [H
 
 ### Features
 
-- Sync web article highlights/annotations on Obsidian startup or manual trigger
-- Update existing articles with new highlights and annotations
-- Customization highlights through [Nunjucks](https://mozilla.github.io/nunjucks) template
+-   Sync web article highlights/annotations on Obsidian startup or manual trigger
+-   Update existing articles with new highlights and annotations
+-   Customization highlights through [Nunjucks](https://mozilla.github.io/nunjucks) template
 
 ## Usage
 
@@ -18,27 +18,27 @@ Use Hypothesis icon on the side icon ribbon or command to trigger manual sync.
 
 ### Settings
 
-- `Connect`: Enter [API Token](https://hypothes.is/account/developer) in order to pull the highlights from Hypohesis
-- `Disconnect`: Remove API Token from Obsidian
-- `Auto Sync Interval`: Set the interval in minutes to sync Hypothesis highlights automatically
-- `Highlights folder`: Specify the folder location for your Hypothesis articles
-- `Sync on startup`: Automatically sync highlights when open Obsidian
-- `Highlights template`: Nunjuck template for rendering your highlights
-- `Groups`: Add/remove group to be synced
-- `Reset sync`: Wipe your sync history. Does not delete any previously synced highlights from your vault
+-   `Connect`: Enter [API Token](https://hypothes.is/account/developer) in order to pull the highlights from Hypohesis
+-   `Disconnect`: Remove API Token from Obsidian
+-   `Auto Sync Interval`: Set the interval in minutes to sync Hypothesis highlights automatically
+-   `Highlights folder`: Specify the folder location for your Hypothesis articles
+-   `Sync on startup`: Automatically sync highlights when open Obsidian
+-   `Highlights template`: Nunjuck template for rendering your highlights
+-   `Groups`: Add/remove group to be synced
+-   `Reset sync`: Wipe your sync history. Does not delete any previously synced highlights from your vault
 
 ### To sync all new highlights since previous update
 
-- Click: Hypothesis ribbon icon
-- Command: Sync new highlights
-- Command: Resync deleted file
-  > (Note: Files synced before v0.1.5 will need to reset sync history and delete all synced files to have this feature work properly)
+-   Click: Hypothesis ribbon icon
+-   Command: Sync new highlights
+-   Command: Resync deleted file
+    > (Note: Files synced before v0.1.5 will need to reset sync history and delete all synced files to have this feature work properly)
 
 ## Limitations & caveats
 
-- Limit to 1000 highlights on initial sync for performance. Subsequent sync for deltas are capped at 200 as pagination of result sets does not work in conjunction with API search_after parameter.
-- Only tested with Obsidian Mac OSX and Windows 10.
-- Does not suport annotations on PDFs.
+-   Limit to 1000 highlights on initial sync for performance. Subsequent sync for deltas are capped at 200 as pagination of result sets does not work in conjunction with API search_after parameter.
+-   Only tested with Obsidian Mac OSX and Windows 10.
+-   Does not suport annotations on PDFs.
 
 ## Acknowledgement
 

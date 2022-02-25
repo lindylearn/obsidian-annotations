@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-annotations",
-	"name": "Annotations",
-	"version": "0.2.0",
-	"minAppVersion": "0.11.0",
-	"description": "Synchronize article annotations and highlights between Hypothes.is and Obsidian.",
-	"author": "Peter Hagen",
-	"authorUrl": "https://github.com/lindylearn",
-	"isDesktopOnly": false
+    "id": "obsidian-annotations",
+    "name": "Annotations",
+    "version": "0.2.0",
+    "minAppVersion": "0.11.0",
+    "description": "Synchronize article annotations and highlights between Hypothes.is and Obsidian.",
+    "author": "Peter Hagen",
+    "authorUrl": "https://github.com/lindylearn",
+    "isDesktopOnly": false
 }

@@ -17,14 +17,13 @@ export default class ManageGroupsModal extends Modal {
         );
 
         this.open();
-
     }
 
     async onOpen() {
-        super.onOpen()
+        super.onOpen();
         const groups = get(settingsStore).groups;
 
-        this.titleEl.innerText = "Hypothes.is: Manage groups to be synced";
+        this.titleEl.innerText = 'Hypothes.is: Manage groups to be synced';
 
         this.modalContent = new ManageGroupsModalContent({
             target: this.contentEl,
@@ -36,7 +35,6 @@ export default class ManageGroupsModal extends Modal {
                 },
             },
         });
-
     }
 
     onClose() {
@@ -46,16 +44,14 @@ export default class ManageGroupsModal extends Modal {
     }
 
     async setGroupsSettings(selectedGroups) {
-
         const groups = get(settingsStore).groups;
 
-        groups.forEach(group => {
-            group.selected = selectedGroups.some((selectedGroup) => selectedGroup.id === group.id);
-        })
+        groups.forEach((group) => {
+            group.selected = selectedGroups.some(
+                (selectedGroup) => selectedGroup.id === group.id
+            );
+        });
 
         await settingsStore.actions.setGroups(groups);
-
     }
-
 }
-
