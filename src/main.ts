@@ -4,11 +4,11 @@ import { SettingsTab } from '~/settingsTab';
 import { initialise, settingsStore } from '~/store';
 import { get } from 'svelte/store';
 import SyncHypothesis from '~/sync/syncHypothesis';
-import hypothesisIcon from '~/assets/hypothesisIcon.svg';
+import annotationsIcon from '~/assets/icon.svg';
 import FileManager from '~/fileManager';
 import { frontMatterDocType } from '~/utils/frontmatter';
 
-addIcon('hypothesisIcon', hypothesisIcon);
+addIcon('annotationsIcon', annotationsIcon);
 
 export default class HypothesisPlugin extends Plugin {
     private syncHypothesis!: SyncHypothesis;
@@ -27,8 +27,8 @@ export default class HypothesisPlugin extends Plugin {
         this.syncHypothesis = new SyncHypothesis(fileManager);
 
         this.addRibbonIcon(
-            'hypothesisIcon',
-            'Sync your hypothesis highlights',
+            'annotationsIcon',
+            'Sync your web annotations',
             () => {
                 if (!get(settingsStore).isConnected) {
                     new Notice(

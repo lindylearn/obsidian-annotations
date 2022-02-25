@@ -1,0 +1,35 @@
+<svg
+   width="100" height="100"
+   viewBox="0 0 24.393491 22.397738">
+  <g
+   transform="translate(-2.800084,-3.8022598)"
+   id="g843">
+    <path
+   id="path833"
+   style="fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+   fill="currentColor"
+   d="M 8.918,15.118 8.063,15.96 c -0.194,0.192 -0.304,0.451 -0.304,0.722 v 2.515 c 0,0.271 -0.109,0.53 -0.303,0.722 l -0.975,0.961 0.639,0.63 2.13,2.1 0.639,0.63 0.975,-0.961 c 0.194,-0.192 0.458,-0.299 0.732,-0.299 h 2.55 c 0.274,0 0.538,-0.107 0.732,-0.299 l 0.854,-0.843" />
+    <polyline
+   id="polyline835"
+   style="fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+   points="7.12,21.51    3.5,25.08 7.333,25.5 9.25,23.609  " />
+    <path
+   id="path837"
+   style="fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+   d="m 12.303,18.499 3.447,3.354 c 0.206,0.2 0.49,0.303 0.779,0.285 0.29,-0.019 0.558,-0.158 0.734,-0.383 l 8.98,-10.734 C 26.622,10.539 26.575,9.858 26.135,9.43 L 23.805,7.157 21.5,4.859 C 21.065,4.424 20.375,4.379 19.887,4.752 L 9.001,13.607 c -0.228,0.174 -0.369,0.438 -0.389,0.724 -0.018,0.286 0.087,0.566 0.29,0.769 z" />
+    <line
+   id="line839"
+   y2="8.5900002"
+   y1="13.521"
+   x2="19.5"
+   x1="14.5"
+   style="fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
+    <line
+   id="line841"
+   y2="11.549"
+   y1="16.479"
+   x2="22.5"
+   x1="17.5"
+   style="fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
+  </g>
+</svg>
