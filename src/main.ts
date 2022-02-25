@@ -109,48 +109,62 @@ export default class HypothesisPlugin extends Plugin {
         }
     }
 
+    // Show sync state in the status bar, when opening annotation files
     private statusBarItem: HTMLElement = null;
-    private unsubscribeUpdates: Unsubscriber = null;
+    private statusBarUnsubscribeUpdates: Unsubscriber = null;
+    private statusBarIntervalId = null;
     async handleFileOpen(file: TFile | null) {
         // Remove previous status bar state
         if (this.statusBarItem) {
             this.statusBarItem.detach();
         }
-        if (this.unsubscribeUpdates) {
+        if (this.statusBarUnsubscribeUpdates) {
             try {
-                this.unsubscribeUpdates();
+                this.statusBarUnsubscribeUpdates();
             } catch {}
         }
-
-        if (file) {
-            const frontmatter =
-                this.app.metadataCache.getFileCache(file).frontmatter;
-            if (frontmatter?.['doc_type'] === frontMatterDocType) {
-                this.statusBarItem = this.addStatusBarItem();
-
-                this.unsubscribeUpdates = syncSessionStore.subscribe(
-                    (state) => {
-                        let text = null;
-                        if (state.status === 'idle') {
-                            const lastSync = moment(
-                                state.syncEndDate
-                            ).fromNow();
-                            text = `Last sync ${lastSync}`;
-                        } else if (state.status === 'sync') {
-                            text = `Synchronizing annotations...`;
-                        } else if (state.status === 'error') {
-                            text = `Error synchronizing`;
-                        } else if (state.status === 'logged-out') {
-                            text = `Not logged in`;
-                        }
-
-                        this.statusBarItem.empty();
-                        this.statusBarItem.createEl('span', {
-                            text,
-                        });
-                    }
-                );
-            }
+        if (this.statusBarIntervalId) {
+            window.clearInterval(this.statusBarIntervalId);
         }
+
+        if (!file) {
+            // closed a file
+            return;
+        }
+        const frontmatter =
+            this.app.metadataCache.getFileCache(file)?.frontmatter;
+        if (frontmatter?.['doc_type'] !== frontMatterDocType) {
+            return;
+        }
+
+        this.statusBarItem = this.addStatusBarItem();
+        const updateStatusBar = () => {
+            const state = get(syncSessionStore);
+            let text = null;
+            if (state.status === 'idle') {
+                const lastSync = moment(state.syncEndDate).fromNow();
+                text = `Last sync ${lastSync}`;
+            } else if (state.status === 'sync') {
+                text = `Synchronizing annotations...`;
+            } else if (state.status === 'error') {
+                text = `Error synchronizing`;
+            } else if (state.status === 'logged-out') {
+                text = `Not logged in`;
+            }
+
+            this.statusBarItem.empty();
+            this.statusBarItem.createEl('span', {
+                text,
+            });
+        };
+
+        // Update both when the state changes, and every minute (to update relative time)
+        this.statusBarUnsubscribeUpdates =
+            syncSessionStore.subscribe(updateStatusBar);
+        this.statusBarIntervalId = window.setInterval(
+            updateStatusBar,
+            60 * 1000
+        );
+        this.registerInterval(this.statusBarIntervalId);
     }
 }
