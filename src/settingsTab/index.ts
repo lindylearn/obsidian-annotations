@@ -11,20 +11,27 @@ import SyncGroup from '~/sync/syncGroup';
 import ManageGroupsModal from '~/modals/manageGroupsModal';
 import defaultMetadataTemplate from '~/assets/defaultMetadataTemplate.njk';
 import defaultAnnotationsTemplate from '~/assets/defaultAnnotationsTemplate.njk';
+import type SyncHypothesis from '~/sync/syncHypothesis';
 
 const { moment } = window;
 
 export class SettingsTab extends PluginSettingTab {
     public app: App;
     private plugin: HypothesisPlugin;
+    private syncHypothesis: SyncHypothesis;
     private renderer: Renderer;
     private tokenManager: TokenManager;
     private syncGroup: SyncGroup;
 
-    constructor(app: App, plugin: HypothesisPlugin) {
+    constructor(
+        app: App,
+        plugin: HypothesisPlugin,
+        syncHypothesis: SyncHypothesis
+    ) {
         super(app, plugin);
         this.app = app;
         this.plugin = plugin;
+        this.syncHypothesis = syncHypothesis;
         this.renderer = new Renderer();
         this.tokenManager = new TokenManager();
         this.syncGroup = new SyncGroup();
@@ -40,8 +47,9 @@ export class SettingsTab extends PluginSettingTab {
         } else {
             this.connect();
         }
-        this.autoSyncInterval();
+        this.sync();
         this.syncOnBoot();
+        this.autoSyncInterval();
         this.bidirectionalSync();
 
         this.insertGroupHeading('Files');
@@ -64,34 +72,23 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     private disconnect(): void {
-        const syncMessage = get(settingsStore).lastSyncDate
-            ? `Last sync ${moment(get(settingsStore).lastSyncDate).fromNow()}`
-            : 'Sync has never run';
-
-        const descFragment = document.createRange().createContextualFragment(`
-      ${get(settingsStore).history.totalArticles} article(s) & ${
-            get(settingsStore).history.totalHighlights
-        } highlight(s) synced<br/>
-      ${syncMessage}
-    `);
+        const userName = get(settingsStore).user.match(/([^:]+)@/)[1];
+        const annotationCount = get(settingsStore).history.totalHighlights;
+        const articleCount = get(settingsStore).history.totalArticles;
+        const descFragment = document
+            .createRange()
+            .createContextualFragment(
+                `Logged in as <a href="https://hypothes.is/users/${userName}">${userName}</a>. Found ${annotationCount} web annotations across ${articleCount} articles.`
+            );
 
         new Setting(this.containerEl)
-            .setName(
-                `Connected to Hypothes.is as ${
-                    get(settingsStore).user.match(/([^:]+)@/)[1]
-                }`
-            )
+            .setName(`Hypothes.is account`)
             .setDesc(descFragment)
             .addButton((button) => {
                 return button
-                    .setButtonText('Disconnect')
+                    .setButtonText('Log out')
                     .setCta()
                     .onClick(async () => {
-                        button
-                            .removeCta()
-                            .setButtonText('Removing API token...')
-                            .setDisabled(true);
-
                         settingsStore.actions.disconnect();
 
                         this.display(); // rerender
@@ -100,18 +97,20 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     private connect(): void {
+        const descFragment = document
+            .createRange()
+            .createContextualFragment(
+                `Create a free <a href="https://web.hypothes.is">Hypothes.is</a> account to annotate web pages. Log in here to synchronize your annotations with your Obsidian notes.`
+            );
+
         new Setting(this.containerEl)
-            .setName('Connect to Hypothes.is')
+            .setName('Hypothes.is account')
+            .setDesc(descFragment)
             .addButton((button) => {
                 return button
-                    .setButtonText('Connect')
+                    .setButtonText('Log in')
                     .setCta()
                     .onClick(async () => {
-                        button
-                            .removeCta()
-                            .setButtonText('Removing API token...')
-                            .setDisabled(true);
-
                         const tokenModal = new ApiTokenModal(
                             this.app,
                             this.tokenManager
@@ -119,6 +118,31 @@ export class SettingsTab extends PluginSettingTab {
                         await tokenModal.waitForClose;
 
                         this.display(); // rerender
+                    });
+            });
+    }
+
+    private sync(): void {
+        const isConnected = get(settingsStore).isConnected;
+        const lastSyncDate = get(settingsStore).lastSyncDate;
+        const descFragment = document
+            .createRange()
+            .createContextualFragment(
+                lastSyncDate && isConnected
+                    ? `Last sync ${moment(lastSyncDate).fromNow()}.`
+                    : 'Sync has never run.'
+            );
+
+        new Setting(this.containerEl)
+            .setName('Sync')
+            .setDesc(descFragment)
+            .addButton((button) => {
+                return button
+                    .setButtonText('Sync now')
+                    .setDisabled(!isConnected)
+                    .setCta()
+                    .onClick(() => {
+                        this.syncHypothesis.startSync();
                     });
             });
     }

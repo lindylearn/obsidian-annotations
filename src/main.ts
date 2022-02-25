@@ -40,8 +40,6 @@ export default class HypothesisPlugin extends Plugin {
             }
         );
 
-        // this.addStatusBarItem().setText('Status Bar Text');
-
         this.addCommand({
             id: 'hypothesis-sync',
             name: 'Sync highlights',
@@ -83,7 +81,9 @@ export default class HypothesisPlugin extends Plugin {
             },
         });
 
-        this.addSettingTab(new SettingsTab(this.app, this));
+        this.addSettingTab(
+            new SettingsTab(this.app, this, this.syncHypothesis)
+        );
 
         if (get(settingsStore).syncOnBoot) {
             if (get(settingsStore).isConnected) {
