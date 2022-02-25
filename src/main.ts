@@ -1,8 +1,8 @@
 import { moment } from 'obsidian';
 import { Notice, Plugin, addIcon, TFile } from 'obsidian';
 import { SettingsTab } from '~/settingsTab';
-import { initialise, settingsStore } from '~/store';
 import { get } from 'svelte/store';
+import { initialise, settingsStore, syncSessionStore } from '~/store';
 import SyncHypothesis from '~/sync/syncHypothesis';
 import annotationsIcon from '~/assets/icon.svg';
 import FileManager from '~/fileManager';
@@ -35,7 +35,7 @@ export default class HypothesisPlugin extends Plugin {
                         'Please configure Hypothesis API token in the plugin setting'
                     );
                 } else {
-                    this.startSync();
+                    this.startSync(true);
                 }
             }
         );
@@ -49,7 +49,7 @@ export default class HypothesisPlugin extends Plugin {
                         'Please configure Hypothesis API token in the plugin setting'
                     );
                 } else {
-                    this.startSync();
+                    this.startSync(true);
                 }
             },
         });
@@ -77,7 +77,7 @@ export default class HypothesisPlugin extends Plugin {
                     return;
                 }
 
-                this.startSync(frontmatter['url']);
+                this.startSync(true, frontmatter['url']);
             },
         });
 
@@ -87,7 +87,7 @@ export default class HypothesisPlugin extends Plugin {
 
         if (get(settingsStore).syncOnBoot) {
             if (get(settingsStore).isConnected) {
-                await this.startSync();
+                await this.startSync(false);
             } else {
                 console.info('Sync disabled. API Token not configured');
             }
@@ -128,8 +128,15 @@ export default class HypothesisPlugin extends Plugin {
         this.clearAutoSync();
     }
 
-    async startSync(uri?: string): Promise<void> {
+    async startSync(manuallyTriggered = false, uri?: string): Promise<void> {
         await this.syncHypothesis.startSync(uri);
+
+        const lastSyncStats = get(syncSessionStore).lastSyncStats;
+        if (manuallyTriggered && lastSyncStats) {
+            new Notice(
+                `Downloaded ${lastSyncStats?.downloadedAnnotations} new annotations and uploaded ${lastSyncStats?.uploadedAnnotations} changes.`
+            );
+        }
     }
 
     async clearAutoSync(): Promise<void> {
@@ -145,7 +152,7 @@ export default class HypothesisPlugin extends Plugin {
             minutes ?? Number(get(settingsStore).autoSyncInterval);
         if (minutesToSync > 0) {
             this.timeoutIDAutoSync = window.setTimeout(() => {
-                this.startSync();
+                this.startSync(false);
                 this.startAutoSync();
             }, minutesToSync * 60000);
         }
