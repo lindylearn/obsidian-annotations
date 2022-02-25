@@ -11,6 +11,8 @@ import ApiTokenModal from '~/modals/apiTokenModal';
 import ResyncDelFileModal from '~/modals/resyncDelFileModal';
 import SyncGroup from '~/sync/syncGroup';
 import ManageGroupsModal from '~/modals/manageGroupsModal';
+import defaultMetadataTemplate from '~/assets/defaultMetadataTemplate.njk';
+import defaultAnnotationsTemplate from '~/assets/defaultAnnotationsTemplate.njk';
 
 const { moment } = window;
 
@@ -34,7 +36,7 @@ export class SettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    this.insertGroupHeading("Annotation synchronization")
+    this.insertGroupHeading("Synchronization")
     if (get(settingsStore).isConnected) {
       this.disconnect();
     } else {
@@ -44,17 +46,19 @@ export class SettingsTab extends PluginSettingTab {
     this.syncOnBoot();
     this.bidirectionalSync();
 
-    this.insertGroupHeading("File structure")
+    this.insertGroupHeading("Files")
     this.highlightsFolder();
     this.folderPath();
 
-    this.insertGroupHeading("Annotation format")
+    this.insertGroupHeading("Formatting")
     this.dateFormat();
-    // this.template();
+    this.metadataTemplate();
+    this.annotationTemplate()
 
     this.insertGroupHeading("Other")
     this.manageGroups();
     this.resetSyncHistory();
+    this.about()
   }
 
   private insertGroupHeading(name: string) {
@@ -115,7 +119,7 @@ export class SettingsTab extends PluginSettingTab {
   private autoSyncInterval(): void {
     new Setting(this.containerEl)
     .setName('Periodic sync interval')
-    .setDesc('Fetch new annotations every X minutes. Specify 0 to only fetch annotations when you click the sidebar icon.')
+    .setDesc('Fetch new annotations every X minutes (recommended). Specify 0 to only fetch annotations manually when you click the sidebar icon.')
     .addText((text) => {
       text
         .setPlaceholder(String(0))
@@ -142,8 +146,11 @@ export class SettingsTab extends PluginSettingTab {
 
   private highlightsFolder(): void {
     new Setting(this.containerEl)
-      .setName('Annotations folder location')
-      .setDesc('Vault folder to create the annotations files in.')
+      .setName('Annotations folder')
+      .setDesc(document
+        .createRange()
+        .createContextualFragment('Vault folder to create the article files in. Files can be freely renamed and moved around afterwards if the <a href="https://help.obsidian.md/Advanced+topics/YAML+front+matter">frontmatter</a> remains intact.')
+      )
       .addDropdown((dropdown) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const files = (this.app.vault.adapter as any).files;
@@ -162,25 +169,29 @@ export class SettingsTab extends PluginSettingTab {
       });
   }
 
-  private template(): void {
+  private metadataTemplate(): void {
     const descFragment = document
       .createRange()
       .createContextualFragment(templateInstructions);
 
     new Setting(this.containerEl)
-      .setName('Highlights template')
+      .setName('Metadata template')
       .setDesc(descFragment)
       .addTextArea((text) => {
-        text.inputEl.style.width = '100%';
-        text.inputEl.style.height = '450px';
+        text.inputEl.style.width = '500px';
+        text.inputEl.style.maxWidth = '50vw';
+        text.inputEl.style.height = '200px';
         text.inputEl.style.fontSize = '0.8em';
+        text.inputEl.style.fontFamily = 'var(--font-monospace)';
+        text.inputEl.placeholder = defaultMetadataTemplate
         text
           .setValue(get(settingsStore).template)
           .onChange(async (value) => {
-            const isValid = this.renderer.validate(value);
+            const fullTemplate = value + defaultAnnotationsTemplate;
+            const isValid = this.renderer.validate(fullTemplate);
 
             if (isValid) {
-              await settingsStore.actions.setTemplate(value);
+              await settingsStore.actions.setTemplate(fullTemplate);
             }
 
             text.inputEl.style.border = isValid ? '' : '1px solid red';
@@ -189,10 +200,22 @@ export class SettingsTab extends PluginSettingTab {
       });
   }
 
+  private annotationTemplate(): void {
+    new Setting(this.containerEl)
+      .setName('Annotation template')
+      .setDesc(document
+        .createRange()
+        .createContextualFragment('In order to parse edits from your files, the annotation template is not currently customizable. <br />Please <a href="https://github.com/lindylearn/obsidian-annotations">raise an issue on GitHub</a> with the customization options you want!')
+      )
+  }
+
   private folderPath(): void {
     new Setting(this.containerEl)
     .setName('Use domain folders')
-    .setDesc('Group generated files into folders based on the domain of the annotated URL. Files can be freely renamed and moved around after they are created.')
+    .setDesc(document
+      .createRange()
+      .createContextualFragment('Group generated files into folders based on the domain of the annotated URL. Install the <a href="https://github.com/ozntel/file-explorer-note-count">File Explorer Count</a> plugin to get a better overview.')
+    )
     .addToggle((toggle) =>
       toggle
         .setValue(get(settingsStore).useDomainFolders)
@@ -204,9 +227,9 @@ export class SettingsTab extends PluginSettingTab {
 
   private syncOnBoot(): void {
     new Setting(this.containerEl)
-      .setName('Sync on Startup')
+      .setName('Sync on startup')
       .setDesc(
-        'Automatically sync new annotations when opening Obsidian'
+        'Automatically sync new annotations when opening Obsidian (recommended).'
       )
       .addToggle((toggle) =>
         toggle
@@ -221,7 +244,7 @@ export class SettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName('Bi-directional sync')
       .setDesc(
-        'Whether to update your Hypothes.is annotations when you modify your local annotations files (highly recommended).'
+        'Whether to update your Hypothes.is annotations when you modify your local annotation files. This allows you to revisit the webpage with all your notes in place.'
       )
       .addToggle((toggle) =>
         toggle
@@ -235,12 +258,12 @@ export class SettingsTab extends PluginSettingTab {
   private resetSyncHistory(): void {
     new Setting(this.containerEl)
       .setName('Reset sync')
-      .setDesc('Wipe sync history to allow for resync')
+      .setDesc('Reset the synchronization state to regenerate files for all your annotations. Existing local files with matching frontmatter will be reused. Local annotation edits will be uploaded if you enabled the \'Bi-directional sync\' above.')
       .addButton((button) => {
         return button
           .setButtonText('Reset')
           .setDisabled(!get(settingsStore).isConnected)
-          .setWarning()
+          .setCta()
           .onClick(async () => {
             await settingsStore.actions.resetSyncHistory();
             this.display(); // rerender
@@ -289,8 +312,7 @@ export class SettingsTab extends PluginSettingTab {
   }
 
   private async manageGroups(): Promise<void> {
-    const descFragment = document.createRange().createContextualFragment(`Add/remove group(s) to be synced.<br/>
-      ${(get(settingsStore).groups).length} group(s) synced from Hypothesis<br/>`);
+    const descFragment = document.createRange().createContextualFragment(`Select the Hypothes.is groups to sync annotations with.`);
 
     new Setting(this.containerEl)
       .setName('Groups')
@@ -322,11 +344,9 @@ export class SettingsTab extends PluginSettingTab {
   private about(): void {
     new Setting(this.containerEl)
       .setName('About')
-      .setDesc(
-        ''
-      )
+      .setDesc('Star the project on GitHub if it\'s useful for you! Please also post bugs and improvement ideas.')
       .addButton((bt) => {
-        bt.buttonEl.outerHTML = `<a href="https://www.buymeacoffee.com/hadynz"><img style="height: 35px;" src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=hadynz&button_colour=BD5FFF&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00"></a>`;
+        bt.buttonEl.outerHTML = `<iframe src="https://ghbtns.com/github-btn.html?user=lindylearn&repo=obsidian-hypothesis-plugin&type=star&size=large" frameborder="0" scrolling="0" width="170" height="30" title="GitHub"></iframe>`;
       });
   }
 }

@@ -21,7 +21,7 @@ export default class SyncHypothesis {
     }
 
     async startSync(uri?: string) {
-        const lastSyncDate = get(settingsStore).lastSyncDate
+        const lastSyncDate = new Date("2022-02-24 00:00:00")//get(settingsStore).lastSyncDate
         this.syncState = { newArticlesSynced: 0, newHighlightsSynced: 0 };
 
         const token = get(settingsStore).token;

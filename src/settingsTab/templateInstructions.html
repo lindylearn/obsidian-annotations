@@ -1,33 +1,12 @@
-Template (<a href="https://mozilla.github.io/nunjucks/">Nunjucks</a>) for
-rendering every synced Hypothesis highlights & annotations.
+<a href="https://mozilla.github.io/nunjucks/">Nunjucks</a> template used to create the metadata of each article file. To apply a new template, reset the existing sync below.
 
 <p>
-  <b>Available variables to use</b>
+  Available variables:
+  <ul>
+    <li><span class="u-pop">{{title}}</span> - Title of the annotated webpage</li>
+    <li><span class="u-pop">{{url}}</span> - URL of the webpage</li>
+    <li><span class="u-pop">{{domain}}</span> - Domain of the URL</li>
+    <li><span class="u-pop">{{annotation_dates}}</span> - Dates on which you annotated the page</li>
+  </ul>
 </p>
 
-Article Metadata
-<ul>
-  <li><span class="u-pop">{{is_new_article}}</span> - New file indicator</li>
-  <li><span class="u-pop">{{title}}</span> - Title</li>
-  <li><span class="u-pop">{{author}}</span> - Author</li>
-  <li><span class="u-pop">{{url}}</span> - Link to source</li>
-  <li><span class="u-pop">{{highlights}}</span> - List of your Highlights</li>
-</ul>
-
-Highlight
-<ul>
-  <li><span class="u-pop">{{id}}</span> - Unique Id</li>
-  <li><span class="u-pop">{{text}}</span> - Text</li>
-  <li><span class="u-pop">{{color}}</span> - Highlight color</li>
-  <li><span class="u-pop">{{incontext}}</span> - Link to Highlight in context</li>
-  <li><span class="u-pop">{{created}}</span> - Created on </li>
-  <li><span class="u-pop">{{updated}}</span> - Updated on</li>
-  <li><span class="u-pop">{{user}}</span> - Username</li>
-  <li><span class="u-pop">{{group}}</span> - Group name</li>
-</ul>
-
-Annotation
-<ul>
-  <li><span class="u-pop">{{annotation}}</span> - Annotation</li>
-  <li><span class="u-pop">{{tags}}</span> - List of tags</li>
-</ul>

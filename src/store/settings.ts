@@ -1,6 +1,5 @@
 import type { Group, SyncedFile } from '~/models';
 import { writable } from 'svelte/store';
-import defaultTemplate from '~/assets/defaultTemplate.njk';
 import type HypothesisPlugin from '~/main';
 
 type SyncHistory = {
@@ -27,9 +26,9 @@ type Settings = {
 const DEFAULT_SETTINGS: Settings = {
   token: '',
   user: '',
-  highlightsFolder: '/',
+  highlightsFolder: '/articles',
   isConnected: false,
-  template: defaultTemplate,
+  template: null,
   syncOnBoot: true,
   autoSyncInterval: 5,
   dateTimeFormat: 'YYYY-MM-DD',
@@ -39,7 +38,7 @@ const DEFAULT_SETTINGS: Settings = {
   },
   syncedFiles: [],
   groups: [],
-  useDomainFolders: false,
+  useDomainFolders: true,
 };
 
 const createSettingsStore = () => {
