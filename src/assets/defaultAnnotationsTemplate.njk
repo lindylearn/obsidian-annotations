@@ -6,11 +6,26 @@
 {%- endif %}
 
 ## Annotations
-{% for highlight in highlights %}
+
+{% macro annotationText(highlight, indentLevel = 0) -%}
+    {%- set lines = highlight.annotation.split("\n\n") -%}
+        {%- for line in lines -%}
+            {%- for i in range(0, indentLevel) %}{{ "	" }}{% endfor -%}
+            {{ "- " }}
+            {%- if highlight.user != "acct:peterhagen@hypothes.is" %}[{{ highlight.user }}](): {% endif -%}
+            {{ line | replace("\n", " ") }}{{ "\n" }}
+        {%- endfor -%}
+    {%- if highlight.tags | length -%}
+        {%- for i in range(0, indentLevel) %}{{ "	" }}{% endfor -%}
+        - {% for tag in highlight.tags %}#{{ tag | replace(" ", "-")}} {% endfor -%}
+        {{ "\n" }}
+    {%- endif -%}
+    {%- for reply in highlight.replies -%}
+        {{ annotationText(reply, indentLevel+1) }}
+    {%- endfor -%}
+{%- endmacro %}
+
+{%- for highlight in highlights -%}
 > {{ highlight.text }} []({{highlight.incontext}})
-{% if highlight.annotation -%}
-{% set lines = highlight.annotation.split("\n\n") %}{% for line in lines %}- {{ line | replace("\n", " ") }}{{ "\n" }}{% endfor %}
-{%- endif %}{% if highlight.tags | length -%}
-- {% for tag in highlight.tags %}#{{ tag | replace(" ", "-")}} {% endfor %}
-{%- endif %}
+{{ annotationText(highlight) }}
 {% endfor %}

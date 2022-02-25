@@ -1,26 +1,13 @@
 import md5 from 'crypto-js/md5';
+import type { Article, Highlights } from '../models';
 import { settingsStore } from '~/store';
 import { get } from 'svelte/store';
-import type { Article, Highlights } from '../models';
 
 export const contructArticlesFromData = (apiDataList): Article[] => {
-    const groups = get(settingsStore).groups;
-
     // Group annotations per article
     const articlesMap = apiDataList.reduce((result, annotationData) => {
         const url = annotationData['uri'];
         const md5Hash = md5(url);
-
-        // Skip pdf source
-        if (url.startsWith('urn:x-pdf')) {
-            return result;
-        }
-
-        // Check if group is selected
-        const group = groups.find((k) => k.id == annotationData['group']);
-        if (!group.selected) {
-            return result;
-        }
 
         const title =
             annotationData['document']['title']?.[0] || parseTitleFromUrl(url);
@@ -35,8 +22,14 @@ export const contructArticlesFromData = (apiDataList): Article[] => {
             };
         }
 
+        const activeUser = get(settingsStore).user;
         const annotation = parseAnnotation(annotationData);
-        if (!annotation.text && !annotation.isReply) {
+        if (
+            !annotation.text &&
+            !annotation.reply_to &&
+            annotation.user === activeUser
+        ) {
+            // Treat other people's page notes as normal annotations
             // Only show the first page note to make editing simpler
             if (!result[md5Hash].page_note) {
                 result[md5Hash].page_note = annotation;
@@ -54,7 +47,7 @@ export const contructArticlesFromData = (apiDataList): Article[] => {
 export const parseAnnotation = (annotationData): Highlights => {
     try {
         // Get highlighted text or reply
-        let isReply,
+        let reply_to,
             highlightText = null;
         const selector = annotationData['target'][0]['selector'];
         if (selector) {
@@ -63,8 +56,10 @@ export const parseAnnotation = (annotationData): Highlights => {
             )?.exact;
         } else {
             // Could be page note or reply
-            if (annotationData['references']) {
-                isReply = true;
+            const references = annotationData['references'];
+            if (references) {
+                // last entry is direct parent
+                reply_to = references[references.length - 1];
             }
         }
 
@@ -80,8 +75,8 @@ export const parseAnnotation = (annotationData): Highlights => {
             tags: annotationData['tags'].filter(
                 (tag) => !excludedTags.includes(tag)
             ),
-            group: annotationData.name,
-            isReply,
+            group: annotationData['group'],
+            reply_to,
         };
     } catch (error) {
         console.log(

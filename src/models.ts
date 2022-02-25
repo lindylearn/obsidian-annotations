@@ -22,7 +22,8 @@ export type Highlights = {
     annotation: string;
     tags: string[];
     group: string;
-    isReply: boolean;
+    reply_to?: string;
+    replies?: Highlights[];
     remote_state?: RemoteState;
 };
 

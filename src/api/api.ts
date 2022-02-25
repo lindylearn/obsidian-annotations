@@ -72,13 +72,17 @@ export default class ApiManager {
         return annotations;
     }
 
-    async getHighlightWithUri(uri: string, limit = 200) {
+    async getHighlightWithUri(
+        uri: string,
+        filterToActiveUser: boolean = false,
+        limit = 200
+    ) {
         try {
             const response = await axios.get(`${this.baseUrl}/search`, {
                 params: {
                     limit,
                     uri,
-                    user: this.userid,
+                    user: filterToActiveUser ? this.userid : undefined,
                     sort: 'updated',
                     order: 'asc',
                 },

@@ -46,11 +46,11 @@ export default class SyncHypothesis {
             const articleAnnotations = await apiManager.getHighlightWithUri(
                 uri
             );
-            articles = contructArticles(articleAnnotations);
+            articles = await contructArticles(articleAnnotations);
         } else if (!lastSyncDate) {
             console.info(`Syncing all user annotations...`);
             const allAnnotations = await apiManager.getHighlights();
-            articles = contructArticles(allAnnotations);
+            articles = await contructArticles(allAnnotations);
         } else {
             console.info(`Fetching new annotations since ${lastSyncDate}...`);
             const newAnnotations = await apiManager.getHighlights(lastSyncDate);
@@ -73,7 +73,7 @@ export default class SyncHypothesis {
                     apiManager.getHighlightWithUri(url)
                 )
             );
-            articles = contructArticles(allAnnotations.flat());
+            articles = await contructArticles(allAnnotations.flat());
         }
 
         const isFullReset = !uri && !lastSyncDate;
