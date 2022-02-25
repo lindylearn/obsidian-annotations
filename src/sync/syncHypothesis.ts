@@ -158,7 +158,6 @@ export default class SyncHypothesis {
 
         // Compare local & remote state
         const reconciledArticle = reconcileArticle(remoteArticle, localArticle);
-        // reconciledAnnotations.sort((a, b) => a.created > b.created ? -1 : 1 ) // TODO keep existing structure, only append?
 
         // Print debug info
         const annotations = reconciledArticle.highlights.concat(

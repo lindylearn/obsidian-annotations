@@ -42,8 +42,10 @@ const reconcileAnnotations = (
     localAnnotations: LocalHighlight[],
     localUpdated: Date
 ): LocalHighlight[] => {
-    const localHighlightMap: { [id: string]: LocalHighlight } =
-        localAnnotations.reduce(
+    // Iterate local annotations and match to remote annotations, to maintain the local order
+
+    const remoteAnnotationsMap: { [id: string]: Highlights } =
+        remoteAnnotations.reduce(
             (obj, highlight) => ({
                 ...obj,
                 [highlight.id]: highlight,
@@ -51,9 +53,9 @@ const reconcileAnnotations = (
             {}
         );
 
-    const reconciledHighlights: LocalHighlight[] = [];
-    for (const remoteAnnotation of remoteAnnotations) {
-        const localAnnotation = localHighlightMap[remoteAnnotation.id];
+    let reconciledHighlights: LocalHighlight[] = [];
+    for (const localAnnotation of localAnnotations) {
+        const remoteAnnotation = remoteAnnotationsMap[localAnnotation.id];
 
         const reconciledAnnotation = reconcileAnnotation(
             remoteAnnotation,
@@ -62,18 +64,19 @@ const reconcileAnnotations = (
         );
         reconciledHighlights.push(reconciledAnnotation);
 
-        // Mark this highlight as processed
-        delete localHighlightMap[remoteAnnotation.id];
+        // Mark this annotation as processed
+        delete remoteAnnotationsMap[remoteAnnotation.id];
     }
 
-    if (Object.keys(localHighlightMap).length > 0) {
-        console.log(
-            `Found ${
-                Object.keys(localHighlightMap).length
-            } local-only annotations:`,
-            Object.values(localHighlightMap)
-        );
-    }
+    // Add new remote annotations to end
+    reconciledHighlights = reconciledHighlights.concat(
+        Object.values(remoteAnnotations)
+            .map((a) => ({
+                ...a,
+                remote_state: RemoteState.REMOTE_ONLY,
+            }))
+            .sort((a, b) => (a.created > b.created ? 1 : -1))
+    );
 
     return reconciledHighlights;
 };
@@ -94,7 +97,7 @@ const reconcileAnnotation = (
         };
     }
     if (!remoteAnnotation) {
-        // Not present locally
+        // Only present locally
         return {
             ...localAnnotation,
             remote_state: RemoteState.LOCAL_ONLY,

@@ -27,7 +27,7 @@ const createSyncSessionStore = () => {
     const store = writable(initialState);
 
     const trackStartSync = (isFullReset: boolean) => {
-        console.info(`Annotations sync start.`);
+        console.debug(`Annotations sync start.`);
         store.update((state) => {
             state.status = 'sync';
             state.syncEndDate = null;
@@ -54,7 +54,7 @@ const createSyncSessionStore = () => {
     };
 
     const trackCompleteSync = (result: SyncResult) => {
-        console.info(`Annotations sync complete:`, result);
+        console.debug(`Annotations sync complete:`, result);
         store.update((state) => {
             settingsStore.updateFn((state) => {
                 state.globalSyncStats = {
