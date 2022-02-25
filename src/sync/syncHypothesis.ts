@@ -1,7 +1,7 @@
 import { settingsStore, syncSessionStore, SyncResult } from '~/store';
 import { get } from 'svelte/store';
 import ApiManager from '~/api/api';
-import parseSyncResponse from '~/parser/parseSyncResponse';
+import contructArticles from '~/parser/contructArticles';
 import type FileManager from '~/fileManager';
 import { Article, RemoteState } from '~/models';
 import { reconcileArticle } from '~/bidirectional-sync/reconcile';
@@ -14,7 +14,7 @@ export default class SyncHypothesis {
     }
 
     async startSync(uri?: string) {
-        // const lastSyncDate = new Date('2022-02-24 00:00:00');
+        // const lastSyncDate = new Date('2022-02-25 00:00:00');
         const lastSyncDate = get(settingsStore).lastSyncDate;
         const token = get(settingsStore).token;
         const userid = get(settingsStore).user;
@@ -46,31 +46,34 @@ export default class SyncHypothesis {
             const articleAnnotations = await apiManager.getHighlightWithUri(
                 uri
             );
-            articles = parseSyncResponse(articleAnnotations);
+            articles = contructArticles(articleAnnotations);
         } else if (!lastSyncDate) {
             console.info(`Syncing all user annotations...`);
             const allAnnotations = await apiManager.getHighlights();
-            articles = parseSyncResponse(allAnnotations);
+            articles = contructArticles(allAnnotations);
         } else {
             console.info(`Fetching new annotations since ${lastSyncDate}...`);
-            const newAnnoations = await apiManager.getHighlights(lastSyncDate);
-            const remotelyChangedArticles = parseSyncResponse(newAnnoations);
+            const newAnnotations = await apiManager.getHighlights(lastSyncDate);
+            // don't call potentially expensive contructArticles() yet
+            const remotelyChangedArticleUrls = [
+                ...new Set(newAnnotations.map((a) => a['uri'])),
+            ];
             const locallyChangedArticles =
                 await this.fileManager.getModifiedArticles(lastSyncDate);
 
             console.info(
-                `Fetching all annotations for the ${remotelyChangedArticles.length} remotely and ${locallyChangedArticles.length} locally changed articles...`
+                `Fetching all annotations for the ${remotelyChangedArticleUrls.length} remotely and ${locallyChangedArticles.length} locally changed articles...`
             );
-            const changedUrls = remotelyChangedArticles
-                .map((a) => a.metadata.url)
-                .concat(locallyChangedArticles.map((a) => a.id));
+            const changedUrls = remotelyChangedArticleUrls.concat(
+                locallyChangedArticles.map((a) => a.id)
+            );
             const uniqueChangedUrls = [...new Set(changedUrls)];
             const allAnnotations = await Promise.all(
                 uniqueChangedUrls.map((url) =>
                     apiManager.getHighlightWithUri(url)
                 )
             );
-            articles = parseSyncResponse(allAnnotations.flat());
+            articles = contructArticles(allAnnotations.flat());
         }
 
         const isFullReset = !uri && !lastSyncDate;

@@ -1,5 +1,5 @@
 import type { LocalHighlight } from '~/models';
-import { excludedTags } from '~/parser/parseSyncResponse';
+import { excludedTags } from '~/parser/parseAnnotatation';
 
 export const parseFilePageNote = (text: string): LocalHighlight => {
     const pageNoteSection = getFileSection(text, '## Page Note');

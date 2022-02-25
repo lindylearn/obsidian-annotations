@@ -1,29 +1,57 @@
 import md5 from 'crypto-js/md5';
-import { moment } from 'obsidian';
 import { settingsStore } from '~/store';
 import { get } from 'svelte/store';
 import type { Article, Highlights } from '../models';
 
-const parseAuthorUrl = (url: string) => {
-    const domain = new URL(url);
-    const author = domain.hostname.replace('www.', '');
-    return author;
+export const contructArticlesFromData = (apiDataList): Article[] => {
+    const groups = get(settingsStore).groups;
+
+    // Group annotations per article
+    const articlesMap = apiDataList.reduce((result, annotationData) => {
+        const url = annotationData['uri'];
+        const md5Hash = md5(url);
+
+        // Skip pdf source
+        if (url.startsWith('urn:x-pdf')) {
+            return result;
+        }
+
+        // Check if group is selected
+        const group = groups.find((k) => k.id == annotationData['group']);
+        if (!group.selected) {
+            return result;
+        }
+
+        const title =
+            annotationData['document']['title']?.[0] || parseTitleFromUrl(url);
+        const author = parseAuthorUrl(url);
+        // Set article metadata, if not already set by previous annotation
+        if (!result[md5Hash]) {
+            result[md5Hash] = {
+                id: md5Hash,
+                metadata: { title, url, author },
+                highlights: [],
+                page_note: null,
+            };
+        }
+
+        const annotation = parseAnnotation(annotationData);
+        if (!annotation.text && !annotation.isReply) {
+            // Only show the first page note to make editing simpler
+            if (!result[md5Hash].page_note) {
+                result[md5Hash].page_note = annotation;
+            }
+        } else {
+            result[md5Hash].highlights.push(annotation);
+        }
+
+        return result;
+    }, {});
+
+    return Object.values(articlesMap);
 };
 
-const parseTitleFromUrl = (url: string) => {
-    const domain = new URL(url);
-    let pathname = domain.pathname;
-
-    // Remove leading and optional trailing slash
-    pathname = pathname.slice(1);
-    if (pathname.endsWith('/')) {
-        pathname = pathname.slice(0, pathname.length - 1);
-    }
-
-    return pathname.replaceAll('/', '-');
-};
-
-const parseHighlight = (annotationData): Highlights => {
+export const parseAnnotation = (annotationData): Highlights => {
     try {
         // Get highlighted text or reply
         let isReply,
@@ -64,6 +92,25 @@ const parseHighlight = (annotationData): Highlights => {
     }
 };
 
+const parseAuthorUrl = (url: string) => {
+    const domain = new URL(url);
+    const author = domain.hostname.replace('www.', '');
+    return author;
+};
+
+const parseTitleFromUrl = (url: string) => {
+    const domain = new URL(url);
+    let pathname = domain.pathname;
+
+    // Remove leading and optional trailing slash
+    pathname = pathname.slice(1);
+    if (pathname.endsWith('/')) {
+        pathname = pathname.slice(0, pathname.length - 1);
+    }
+
+    return pathname.replaceAll('/', '-');
+};
+
 // Strip excessive whitespace and newlines from the TextQuoteSelector highlight text
 // This mirrors how Hypothesis displays annotations, to remove artifacts from the HTML annotation anchoring
 const cleanTextSelectorHighlight = (text: string): string => {
@@ -78,58 +125,8 @@ const cleanTextSelectorHighlight = (text: string): string => {
     return text;
 };
 
-const parseSyncResponse = (data): Article[] => {
-    const groups = get(settingsStore).groups;
-
-    // Group annotations per article
-    const articlesMap = data.reduce((result, annotationData) => {
-        const url = annotationData['uri'];
-        const md5Hash = md5(url);
-
-        // Skip pdf source
-        if (url.startsWith('urn:x-pdf')) {
-            return result;
-        }
-
-        // Check if group is selected
-        const group = groups.find((k) => k.id == annotationData['group']);
-        if (!group.selected) {
-            return result;
-        }
-
-        const title =
-            annotationData['document']['title']?.[0] || parseTitleFromUrl(url);
-        const author = parseAuthorUrl(url);
-        // Set article metadata, if not already set by previous annotation
-        if (!result[md5Hash]) {
-            result[md5Hash] = {
-                id: md5Hash,
-                metadata: { title, url, author },
-                highlights: [],
-                page_note: null,
-            };
-        }
-
-        const annotation = parseHighlight(annotationData);
-        if (!annotation.text && !annotation.isReply) {
-            // Only show the first page note to make editing simpler
-            if (!result[md5Hash].page_note) {
-                result[md5Hash].page_note = annotation;
-            }
-        } else {
-            result[md5Hash].highlights.push(annotation);
-        }
-
-        return result;
-    }, {});
-
-    return Object.values(articlesMap);
-};
-
 export const excludedTags = [
     'via-lindylearn.io',
     'via annotations.lindylearn.io',
     'lindylearn',
 ];
-
-export default parseSyncResponse;
