@@ -2,43 +2,51 @@ import type { Group } from '~/models';
 import { writable } from 'svelte/store';
 import type HypothesisPlugin from '~/main';
 
-type SyncHistory = {
-    totalArticles: number;
-    totalHighlights: number;
-};
-
 type Settings = {
+    // persisted sync state
+    isConnected: boolean;
+    lastSyncDate?: Date;
+    globalSyncStats?: GlobalSyncStats;
+
+    // user auth
     token: string;
     user: string;
-    highlightsFolder: string;
-    lastSyncDate?: Date;
-    isConnected: boolean;
-    customMetadataTemplate: string;
-    syncOnBoot: boolean;
-    enableBidirectionalSync: boolean;
-    history: SyncHistory;
-    dateTimeFormat: string;
-    autoSyncInterval: number;
     groups: Group[];
+
+    // sync settings
+    highlightsFolder: string;
+    syncOnBoot: boolean;
+    autoSyncInterval: number;
+    enableBidirectionalSync: boolean;
+
+    // formatting
     useDomainFolders: boolean;
+    customMetadataTemplate: string;
+    dateTimeFormat: string;
+};
+
+type GlobalSyncStats = {
+    remoteArticlesCount: number;
+    remoteAnnotationsCount: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
+    isConnected: false,
+    lastSyncDate: null,
+    globalSyncStats: null,
+
     token: '',
     user: '',
-    highlightsFolder: 'articles',
-    isConnected: false,
-    customMetadataTemplate: null,
-    syncOnBoot: true,
-    enableBidirectionalSync: true,
-    autoSyncInterval: 5,
-    dateTimeFormat: 'YYYY-MM-DD',
-    history: {
-        totalArticles: 0,
-        totalHighlights: 0,
-    },
     groups: [],
+
+    highlightsFolder: 'articles',
+    syncOnBoot: true,
+    autoSyncInterval: 5,
+    enableBidirectionalSync: true,
+
     useDomainFolders: true,
+    customMetadataTemplate: null,
+    dateTimeFormat: 'YYYY-MM-DD',
 };
 
 const createSettingsStore = () => {
@@ -100,30 +108,7 @@ const createSettingsStore = () => {
         });
     };
 
-    const resetSyncHistory = () => {
-        store.update((state) => {
-            state.history.totalArticles = 0;
-            state.history.totalHighlights = 0;
-            state.lastSyncDate = undefined;
-            return state;
-        });
-    };
-
-    const setSyncDateToNow = () => {
-        store.update((state) => {
-            state.lastSyncDate = new Date();
-            return state;
-        });
-    };
-
-    const incrementHistory = (delta: SyncHistory) => {
-        store.update((state) => {
-            state.history.totalArticles += delta.totalArticles;
-            state.history.totalHighlights += delta.totalHighlights;
-            return state;
-        });
-    };
-
+    const updateFn = store.update;
     const update = (settingsOverride: Partial<Settings>) => {
         store.update((state) => ({ ...state, ...settingsOverride }));
     };
@@ -131,13 +116,11 @@ const createSettingsStore = () => {
     return {
         subscribe: store.subscribe,
         initialise,
+        updateFn,
         update,
         actions: {
-            resetSyncHistory,
-            setSyncDateToNow,
             connect,
             disconnect,
-            incrementHistory,
         },
     };
 };

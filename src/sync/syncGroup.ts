@@ -4,7 +4,7 @@ import ApiManager from '~/api/api';
 import parseGroupsResponse from '~/parser/parseGroupResponse';
 
 export default class SyncGroup {
-    async startSync() {
+    async sync() {
         const token = get(settingsStore).token;
         const userid = get(settingsStore).user;
 

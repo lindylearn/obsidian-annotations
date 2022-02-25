@@ -4,7 +4,7 @@ import pickBy from 'lodash.pickby';
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import { get } from 'svelte/store';
 import { Renderer } from '~/renderer';
-import { settingsStore, DEFAULT_SETTINGS } from '~/store';
+import { settingsStore, syncSessionStore, DEFAULT_SETTINGS } from '~/store';
 import { TokenManager } from '~/store/tokenManager';
 import ApiTokenModal from '~/modals/apiTokenModal';
 import SyncGroup from '~/sync/syncGroup';
@@ -73,12 +73,17 @@ export class SettingsTab extends PluginSettingTab {
 
     private disconnect(): void {
         const userName = get(settingsStore).user.match(/([^:]+)@/)[1];
-        const annotationCount = get(settingsStore).history.totalHighlights;
-        const articleCount = get(settingsStore).history.totalArticles;
+        const globalSyncStats = get(settingsStore).globalSyncStats;
+        const annotationCount = globalSyncStats?.remoteAnnotationsCount;
+        const articleCount = globalSyncStats?.remoteArticlesCount;
         const descFragment = document
             .createRange()
             .createContextualFragment(
-                `Logged in as <a href="https://hypothes.is/users/${userName}">${userName}</a>. Found ${annotationCount} web annotations across ${articleCount} articles.`
+                `Logged in as <a href="https://hypothes.is/users/${userName}">${userName}</a>. ${
+                    globalSyncStats
+                        ? `Found ${annotationCount} web annotations across ${articleCount} articles.`
+                        : ''
+                }`
             );
 
         new Setting(this.containerEl)
@@ -86,7 +91,7 @@ export class SettingsTab extends PluginSettingTab {
             .setDesc(descFragment)
             .addButton((button) => {
                 return button
-                    .setButtonText('Log out')
+                    .setButtonText('Disconnect')
                     .setCta()
                     .onClick(async () => {
                         settingsStore.actions.disconnect();
@@ -108,7 +113,7 @@ export class SettingsTab extends PluginSettingTab {
             .setDesc(descFragment)
             .addButton((button) => {
                 return button
-                    .setButtonText('Log in')
+                    .setButtonText('Connect')
                     .setCta()
                     .onClick(async () => {
                         const tokenModal = new ApiTokenModal(
@@ -134,7 +139,7 @@ export class SettingsTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('Sync')
+            .setName('Sync state')
             .setDesc(descFragment)
             .addButton((button) => {
                 return button
@@ -151,7 +156,7 @@ export class SettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName('Periodic sync interval')
             .setDesc(
-                'Fetch new annotations every X minutes (recommended). Specify 0 to only fetch annotations manually when you click the sidebar icon.'
+                'Check for new annotations every X minutes. Specify 0 to only fetch annotations by clicking the sidebar icon.'
             )
             .addText((text) => {
                 text.setPlaceholder(String(0))
@@ -254,7 +259,7 @@ export class SettingsTab extends PluginSettingTab {
                 document
                     .createRange()
                     .createContextualFragment(
-                        'In order to parse edits from your files, the annotation template is not currently customizable. <br />Please <a href="https://github.com/lindylearn/obsidian-annotations">raise an issue on GitHub</a> with the customization options you want!'
+                        'In order to parse edits from your files, the annotation template is not freely customizable. Please <a href="https://github.com/lindylearn/obsidian-annotations">raise an issue on GitHub</a> with the customization options you\'d use!'
                     )
             );
     }
@@ -320,7 +325,7 @@ export class SettingsTab extends PluginSettingTab {
                     .setDisabled(!get(settingsStore).isConnected)
                     .setCta()
                     .onClick(() => {
-                        settingsStore.actions.resetSyncHistory();
+                        syncSessionStore.actions.reset();
                         this.display(); // rerender
                     });
             });
@@ -362,7 +367,7 @@ export class SettingsTab extends PluginSettingTab {
                     .setDisabled(!get(settingsStore).isConnected)
                     .onClick(async () => {
                         settingsStore.update({ groups: [] });
-                        await this.syncGroup.startSync();
+                        await this.syncGroup.sync();
                         this.display(); // rerender
                     });
             })

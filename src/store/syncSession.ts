@@ -1,42 +1,69 @@
 import { writable } from 'svelte/store';
 import { settingsStore } from '~/store';
-import type { Article } from '~/models';
 
-type SyncJob = {
-    status: 'idle' | 'in-progress' | 'done' | 'error';
-    articleId: string;
+// temporary sync session
+// persistent stats are stored in the settings store
+export type SyncSession = {
+    status: 'logged-out' | 'idle' | 'sync' | 'error';
+    errorMessage?: string;
+    lastSyncStats?: SyncResult;
 };
 
-type SyncResult = {
+export type SyncResult = {
     newArticlesCount: number;
     newHighlightsCount: number;
     updatedArticlesCount: number;
     updatedHighlightsCount: number;
 };
 
-type SyncSession = {
-    status: 'idle' | 'login' | 'loading' | 'error';
-    errorMessage?: string;
-    jobs: SyncJob[];
-};
-
-// const getArticles = (state: SyncSession): Article[] => {
-//   return state.jobs.map((j) => j.article);
-// };
-
 const createSyncSessionStore = () => {
     const initialState: SyncSession = {
-        status: 'idle',
-        jobs: [],
+        status: null,
+        errorMessage: null,
+        lastSyncStats: null,
     };
-
     const store = writable(initialState);
 
-    const startSync = () => {
+    const trackStartSync = () => {
+        console.info(`Annotations sync start.`);
         store.update((state) => {
-            state.status = 'loading';
+            state.status = 'sync';
             state.errorMessage = undefined;
-            state.jobs = [];
+            return state;
+        });
+    };
+
+    const trackErrorSync = (errorMessage: string) => {
+        console.error(`Annotations sync error: ${errorMessage}`);
+        store.update((state) => {
+            settingsStore.update({ lastSyncDate: new Date() });
+
+            state.status = 'error';
+            state.errorMessage = errorMessage;
+            state.lastSyncStats = null;
+            return state;
+        });
+    };
+
+    const trackCompleteSync = (result: SyncResult) => {
+        console.info(`Annotations sync complete:`, result);
+        store.update((state) => {
+            settingsStore.updateFn((state) => {
+                state.globalSyncStats = {
+                    remoteAnnotationsCount:
+                        (state.globalSyncStats?.remoteAnnotationsCount || 0) +
+                        1,
+                    remoteArticlesCount:
+                        (state.globalSyncStats?.remoteArticlesCount || 0) + 1,
+                };
+
+                return state;
+            });
+            settingsStore.update({ lastSyncDate: new Date() });
+
+            state.status = 'idle';
+            state.errorMessage = null;
+            state.lastSyncStats = result;
             return state;
         });
     };
@@ -44,52 +71,8 @@ const createSyncSessionStore = () => {
     const reset = () => {
         store.update((state) => {
             state.status = 'idle';
-            state.errorMessage = undefined;
-            state.jobs = [];
-            return state;
-        });
-    };
-
-    const errorSync = (errorMessage: string) => {
-        store.update((state) => {
-            state.status = 'error';
-            state.errorMessage = errorMessage;
-            return state;
-        });
-    };
-
-    const completeSync = (result: SyncResult) => {
-        store.update((state) => {
-            settingsStore.actions.setSyncDateToNow();
-            settingsStore.actions.incrementHistory({
-                totalArticles: result.newArticlesCount,
-                totalHighlights: result.newHighlightsCount,
-            });
-            reset();
-            return state;
-        });
-    };
-
-    const setJobs = (articles: Article[]) => {
-        store.update((state) => {
-            for (const article of articles) {
-                state.jobs.push({ status: 'idle', articleId: article.id });
-            }
-            return state;
-        });
-    };
-
-    const updateJob = (article: Article, status: SyncJob['status']) => {
-        store.update((state) => {
-            const job = state.jobs.filter(
-                (job) => job.articleId === article.id
-            )[0];
-            job.status = status;
-
-            if (status === 'done') {
-                settingsStore.actions.setSyncDateToNow();
-            }
-
+            state.errorMessage = null;
+            state.lastSyncStats = null;
             return state;
         });
     };
@@ -97,13 +80,9 @@ const createSyncSessionStore = () => {
     return {
         subscribe: store.subscribe,
         actions: {
-            startSync,
-            errorSync,
-            completeSync,
-            setJobs,
-            startJob: (article: Article) => updateJob(article, 'in-progress'),
-            completeJob: (article: Article) => updateJob(article, 'done'),
-            errorJob: (article: Article) => updateJob(article, 'error'),
+            trackStartSync,
+            trackErrorSync,
+            trackCompleteSync,
             reset,
         },
     };

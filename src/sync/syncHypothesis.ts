@@ -1,5 +1,4 @@
-import { settingsStore, syncSessionStore } from '~/store';
-import type { SyncState } from './syncState';
+import { settingsStore, syncSessionStore, SyncResult } from '~/store';
 import { get } from 'svelte/store';
 import ApiManager from '~/api/api';
 import parseSyncResponse from '~/parser/parseSyncResponse';
@@ -8,11 +7,15 @@ import type FileManager from '~/fileManager';
 import { Article, RemoteState } from '~/models';
 import { reconcileArticle } from '~/bidirectional-sync/reconcile';
 
+const initialSyncResult = {
+    newArticlesCount: 0,
+    newHighlightsCount: 0,
+    updatedArticlesCount: 0,
+    updatedHighlightsCount: 0,
+};
+
 export default class SyncHypothesis {
-    private syncState: SyncState = {
-        newArticlesSynced: 0,
-        newHighlightsSynced: 0,
-    };
+    private syncState: SyncResult = initialSyncResult;
     private syncGroup: SyncGroup;
     private fileManager: FileManager;
 
@@ -23,19 +26,27 @@ export default class SyncHypothesis {
 
     async startSync(uri?: string) {
         const lastSyncDate = new Date('2022-02-24 00:00:00'); //get(settingsStore).lastSyncDate
-        this.syncState = { newArticlesSynced: 0, newHighlightsSynced: 0 };
-
         const token = get(settingsStore).token;
         const userid = get(settingsStore).user;
-
         const apiManager = new ApiManager(token, userid);
 
-        syncSessionStore.actions.startSync();
+        syncSessionStore.actions.trackStartSync();
+        this.syncState = initialSyncResult;
+        try {
+            await this.syncGroup.sync();
+            await this.syncArticles(apiManager, lastSyncDate, uri);
 
-        // Fetch groups
-        await this.syncGroup.startSync();
+            syncSessionStore.actions.trackCompleteSync(this.syncState);
+        } catch (err) {
+            syncSessionStore.actions.trackErrorSync(err);
+        }
+    }
 
-        // Fetch highlights
+    private async syncArticles(
+        apiManager: ApiManager,
+        lastSyncDate: Date,
+        uri?: string
+    ): Promise<void> {
         let articles = [];
         if (uri) {
             console.info(`Syncing annotations for URL ${uri}...`);
@@ -65,40 +76,14 @@ export default class SyncHypothesis {
             articles = parseSyncResponse(allAnnotations);
         }
 
-        syncSessionStore.actions.setJobs(articles);
-
+        // Update annotation files locally
         if (articles.length > 0) {
-            await this.syncArticles(articles, apiManager);
-        }
-
-        console.info(
-            `Annotations sync complete. Found ${this.syncState.newHighlightsSynced} annotations across ${this.syncState.newArticlesSynced} articles.`
-        );
-        syncSessionStore.actions.completeSync({
-            newArticlesCount: this.syncState.newArticlesSynced,
-            newHighlightsCount: this.syncState.newHighlightsSynced,
-            updatedArticlesCount: 0,
-            updatedHighlightsCount: 0,
-        });
-    }
-
-    private async syncArticles(
-        articles: Article[],
-        apiManager: ApiManager
-    ): Promise<void> {
-        for (const article of articles) {
-            // if (article.metadata.url != "http://kernelmag.io/pieces/a-founders-guide") {
-            //     continue
-            // }
-            try {
-                syncSessionStore.actions.startJob(article);
-
-                await this.syncArticle(article, apiManager);
-
-                syncSessionStore.actions.completeJob(article);
-            } catch (e) {
-                console.error(`Error syncing ${article.metadata.title}`, e);
-                syncSessionStore.actions.errorJob(article);
+            for (const article of articles) {
+                try {
+                    await this.syncArticle(article, apiManager);
+                } catch (e) {
+                    console.error(`Error syncing ${article.metadata.title}`, e);
+                }
             }
         }
     }
@@ -117,9 +102,9 @@ export default class SyncHypothesis {
         );
 
         if (createdNewArticle) {
-            this.syncState.newArticlesSynced += 1;
+            this.syncState.newArticlesCount += 1;
         }
-        this.syncState.newHighlightsSynced +=
+        this.syncState.newHighlightsCount +=
             reconciledArticle.highlights.length;
     }
 
@@ -129,7 +114,6 @@ export default class SyncHypothesis {
     ): Promise<Article> {
         // Parse local file
         const localArticle = await this.fileManager.readArticle(remoteArticle);
-        // console.log(remoteArticle, localArticle)
 
         // Compare local & remote state
         const reconciledArticle = reconcileArticle(remoteArticle, localArticle);
