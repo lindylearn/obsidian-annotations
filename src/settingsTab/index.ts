@@ -1,5 +1,4 @@
 import templateInstructions from './templateInstructions.html';
-import datetimeInstructions from './datetimeInstructions.html';
 import type HypothesisPlugin from '~/main';
 import pickBy from 'lodash.pickby';
 import { App, PluginSettingTab, Setting } from 'obsidian';
@@ -306,7 +305,9 @@ export class SettingsTab extends PluginSettingTab {
     private dateFormat(): void {
         const descFragment = document
             .createRange()
-            .createContextualFragment(datetimeInstructions);
+            .createContextualFragment(
+                'Which date format to use in the article metadata. See the <a href="https://momentjs.com/docs/#/displaying/format/">format reference</a>.'
+            );
 
         new Setting(this.containerEl)
             .setName('Date format')
