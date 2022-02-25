@@ -1,7 +1,7 @@
 import { moment } from 'obsidian';
 import { Notice, Plugin, addIcon, TFile } from 'obsidian';
 import { SettingsTab } from '~/settingsTab';
-import { get } from 'svelte/store';
+import { get, Unsubscriber } from 'svelte/store';
 import { initialise, settingsStore, syncSessionStore } from '~/store';
 import SyncHypothesis from '~/sync/syncHypothesis';
 import annotationsIcon from '~/assets/icon.svg';
@@ -15,43 +15,22 @@ export default class HypothesisPlugin extends Plugin {
     private timeoutIDAutoSync: number;
 
     async onload(): Promise<void> {
-        console.log('loading plugin', new Date().toLocaleString());
-
         await initialise(this);
 
         const fileManager = new FileManager(
             this.app.vault,
             this.app.metadataCache
         );
-
         this.syncHypothesis = new SyncHypothesis(fileManager);
 
-        this.addRibbonIcon(
-            'annotationsIcon',
-            'Sync your web annotations',
-            () => {
-                if (!get(settingsStore).isConnected) {
-                    new Notice(
-                        'Please configure Hypothesis API token in the plugin setting'
-                    );
-                } else {
-                    this.startSync(true);
-                }
-            }
+        this.addRibbonIcon('annotationsIcon', 'Sync your web annotations', () =>
+            this.startSync(true)
         );
 
         this.addCommand({
             id: 'hypothesis-sync',
             name: 'Sync highlights',
-            callback: () => {
-                if (!get(settingsStore).isConnected) {
-                    new Notice(
-                        'Please configure Hypothesis API token in the plugin setting'
-                    );
-                } else {
-                    this.startSync(true);
-                }
-            },
+            callback: () => this.startSync(true),
         });
 
         this.addCommand({
@@ -70,13 +49,6 @@ export default class HypothesisPlugin extends Plugin {
                     return;
                 }
 
-                if (!get(settingsStore).isConnected) {
-                    new Notice(
-                        'Please configure Hypothesis API token in the plugin setting'
-                    );
-                    return;
-                }
-
                 this.startSync(true, frontmatter['url']);
             },
         });
@@ -85,50 +57,30 @@ export default class HypothesisPlugin extends Plugin {
             new SettingsTab(this.app, this, this.syncHypothesis)
         );
 
-        if (get(settingsStore).syncOnBoot) {
-            if (get(settingsStore).isConnected) {
-                await this.startSync(false);
-            } else {
-                console.info('Sync disabled. API Token not configured');
-            }
-        }
+        this.registerEvent(
+            this.app.workspace.on('file-open', this.handleFileOpen.bind(this))
+        );
 
+        if (get(settingsStore).syncOnBoot) {
+            await this.startSync(false);
+        }
         if (get(settingsStore).autoSyncInterval) {
             this.startAutoSync();
         }
-
-        let statusBarItem = null;
-        this.registerEvent(
-            this.app.workspace.on('file-open', (file: TFile | null) => {
-                if (statusBarItem) {
-                    statusBarItem.detach();
-                }
-
-                if (file) {
-                    const frontmatter =
-                        this.app.metadataCache.getFileCache(file).frontmatter;
-                    if (frontmatter?.['doc_type'] === frontMatterDocType) {
-                        // TODO update after syncs
-                        statusBarItem = this.addStatusBarItem();
-
-                        const lastSync = moment(
-                            get(settingsStore).lastSyncDate
-                        ).fromNow();
-                        statusBarItem.createEl('span', {
-                            text: `Last sync ${lastSync}`,
-                        });
-                    }
-                }
-            })
-        );
     }
 
     async onunload(): Promise<void> {
-        console.log('unloading plugin', new Date().toLocaleString());
         this.clearAutoSync();
     }
 
     async startSync(manuallyTriggered = false, uri?: string): Promise<void> {
+        if (!get(settingsStore).isConnected) {
+            new Notice(
+                'Please configure your Hypothesis API token in the plugin settings first.'
+            );
+            return;
+        }
+
         await this.syncHypothesis.startSync(uri);
 
         const lastSyncStats = get(syncSessionStore).lastSyncStats;
@@ -137,14 +89,6 @@ export default class HypothesisPlugin extends Plugin {
                 `Downloaded ${lastSyncStats?.downloadedAnnotations} new annotations and uploaded ${lastSyncStats?.uploadedAnnotations} changes.`
             );
         }
-    }
-
-    async clearAutoSync(): Promise<void> {
-        if (this.timeoutIDAutoSync) {
-            window.clearTimeout(this.timeoutIDAutoSync);
-            this.timeoutIDAutoSync = undefined;
-        }
-        console.log('Clearing auto sync...');
     }
 
     async startAutoSync(minutes?: number): Promise<void> {
@@ -159,5 +103,58 @@ export default class HypothesisPlugin extends Plugin {
         console.log(
             `StartAutoSync: this.timeoutIDAutoSync ${this.timeoutIDAutoSync} with ${minutesToSync} minutes`
         );
+    }
+
+    async clearAutoSync(): Promise<void> {
+        if (this.timeoutIDAutoSync) {
+            window.clearTimeout(this.timeoutIDAutoSync);
+            this.timeoutIDAutoSync = undefined;
+        }
+        console.log('Clearing auto sync...');
+    }
+
+    private statusBarItem: HTMLElement = null;
+    private unsubscribeUpdates: Unsubscriber = null;
+    async handleFileOpen(file: TFile | null) {
+        // Remove previous status bar state
+        if (this.statusBarItem) {
+            this.statusBarItem.detach();
+        }
+        if (this.unsubscribeUpdates) {
+            try {
+                this.unsubscribeUpdates();
+            } catch {}
+        }
+
+        if (file) {
+            const frontmatter =
+                this.app.metadataCache.getFileCache(file).frontmatter;
+            if (frontmatter?.['doc_type'] === frontMatterDocType) {
+                this.statusBarItem = this.addStatusBarItem();
+
+                this.unsubscribeUpdates = syncSessionStore.subscribe(
+                    (state) => {
+                        let text = null;
+                        if (state.status === 'idle') {
+                            const lastSync = moment(
+                                state.syncEndDate
+                            ).fromNow();
+                            text = `Last sync ${lastSync}`;
+                        } else if (state.status === 'sync') {
+                            text = `Synchronizing annotations...`;
+                        } else if (state.status === 'error') {
+                            text = `Error synchronizing`;
+                        } else if (state.status === 'logged-out') {
+                            text = `Not logged in`;
+                        }
+
+                        this.statusBarItem.empty();
+                        this.statusBarItem.createEl('span', {
+                            text,
+                        });
+                    }
+                );
+            }
+        }
     }
 }

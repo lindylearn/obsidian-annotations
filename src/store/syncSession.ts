@@ -5,6 +5,7 @@ import { settingsStore } from '~/store';
 // persistent stats are stored in the settings store
 export type SyncSession = {
     status: 'logged-out' | 'idle' | 'sync' | 'error';
+    syncEndDate?: Date;
     errorMessage?: string;
     lastSyncStats?: SyncResult;
 };
@@ -19,6 +20,7 @@ export type SyncResult = {
 const createSyncSessionStore = () => {
     const initialState: SyncSession = {
         status: null,
+        syncEndDate: null,
         errorMessage: null,
         lastSyncStats: null,
     };
@@ -28,6 +30,7 @@ const createSyncSessionStore = () => {
         console.info(`Annotations sync start.`);
         store.update((state) => {
             state.status = 'sync';
+            state.syncEndDate = null;
             state.errorMessage = undefined;
             return state;
         });
@@ -43,6 +46,7 @@ const createSyncSessionStore = () => {
             settingsStore.update({ lastSyncDate: new Date() });
 
             state.status = 'error';
+            state.syncEndDate = new Date();
             state.errorMessage = errorMessage;
             state.lastSyncStats = null;
             return state;
@@ -67,6 +71,7 @@ const createSyncSessionStore = () => {
             settingsStore.update({ lastSyncDate: new Date() });
 
             state.status = 'idle';
+            state.syncEndDate = new Date();
             state.errorMessage = null;
             state.lastSyncStats = result;
             return state;
@@ -76,6 +81,7 @@ const createSyncSessionStore = () => {
     const reset = () => {
         store.update((state) => {
             state.status = 'idle';
+            state.syncEndDate = null;
             state.errorMessage = null;
             state.lastSyncStats = null;
             return state;
