@@ -393,6 +393,7 @@ export class SettingsTab extends PluginSettingTab {
                     .setCta()
                     .setDisabled(!get(settingsStore).isConnected)
                     .onClick(async () => {
+                        await this.syncGroup.sync();
                         const manageGroupsModal = new ManageGroupsModal(
                             this.app
                         );

@@ -2,18 +2,15 @@ import { settingsStore, syncSessionStore, SyncResult } from '~/store';
 import { get } from 'svelte/store';
 import ApiManager from '~/api/api';
 import parseSyncResponse from '~/parser/parseSyncResponse';
-import SyncGroup from './syncGroup';
 import type FileManager from '~/fileManager';
 import { Article, RemoteState } from '~/models';
 import { reconcileArticle } from '~/bidirectional-sync/reconcile';
 
 export default class SyncHypothesis {
-    private syncGroup: SyncGroup;
     private fileManager: FileManager;
 
     constructor(fileManager: FileManager) {
         this.fileManager = fileManager;
-        this.syncGroup = new SyncGroup();
     }
 
     async startSync(uri?: string) {
@@ -26,9 +23,6 @@ export default class SyncHypothesis {
         const isFullReset = !uri && !lastSyncDate;
         syncSessionStore.actions.trackStartSync(isFullReset);
         try {
-            if (!uri) {
-                await this.syncGroup.sync();
-            }
             const syncState = await this.syncArticles(
                 apiManager,
                 lastSyncDate,
