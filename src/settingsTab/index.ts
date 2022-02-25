@@ -5,7 +5,7 @@ import pickBy from 'lodash.pickby';
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import { get } from 'svelte/store';
 import { Renderer } from '~/renderer';
-import { settingsStore } from '~/store';
+import { settingsStore, DEFAULT_SETTINGS } from '~/store';
 import { TokenManager } from '~/store/tokenManager';
 import ApiTokenModal from '~/modals/apiTokenModal';
 import SyncGroup from '~/sync/syncGroup';
@@ -161,15 +161,32 @@ export class SettingsTab extends PluginSettingTab {
             .addDropdown((dropdown) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const files = (this.app.vault.adapter as any).files;
-                const folders = pickBy(files, (val) => {
-                    return val.type === 'folder';
+                const existingFolders = Object.keys(
+                    pickBy(files, (val) => {
+                        return val.type === 'folder';
+                    })
+                );
+
+                const currentValue = get(settingsStore).highlightsFolder;
+                existingFolders.forEach((folderPath) => {
+                    if (folderPath.startsWith(`${currentValue}/`)) {
+                        // Don't show subfolders of current setting
+                        return;
+                    }
+                    dropdown.addOption(folderPath, folderPath);
                 });
 
-                Object.keys(folders).forEach((val) => {
-                    dropdown.addOption(val, val);
-                });
+                if (
+                    !existingFolders.contains(DEFAULT_SETTINGS.highlightsFolder)
+                ) {
+                    dropdown.addOption(
+                        DEFAULT_SETTINGS.highlightsFolder,
+                        `${DEFAULT_SETTINGS.highlightsFolder} (will be created)`
+                    );
+                }
+
                 return dropdown
-                    .setValue(get(settingsStore).highlightsFolder)
+                    .setValue(currentValue)
                     .onChange((highlightsFolder) =>
                         settingsStore.update({ highlightsFolder })
                     );

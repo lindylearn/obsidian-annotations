@@ -23,10 +23,10 @@ type Settings = {
     useDomainFolders: boolean;
 };
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
     token: '',
     user: '',
-    highlightsFolder: '/articles',
+    highlightsFolder: 'articles',
     isConnected: false,
     customMetadataTemplate: null,
     syncOnBoot: true,
