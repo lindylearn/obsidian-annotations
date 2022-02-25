@@ -67,8 +67,3 @@ export type Group = {
     public: boolean;
     selected: boolean;
 };
-
-export type SyncedFile = {
-    filename: string;
-    uri: string;
-};

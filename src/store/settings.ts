@@ -1,4 +1,4 @@
-import type { Group, SyncedFile } from '~/models';
+import type { Group } from '~/models';
 import { writable } from 'svelte/store';
 import type HypothesisPlugin from '~/main';
 
@@ -18,7 +18,6 @@ type Settings = {
     history: SyncHistory;
     dateTimeFormat: string;
     autoSyncInterval: number;
-    syncedFiles: SyncedFile[];
     groups: Group[];
     useDomainFolders: boolean;
 };
@@ -36,7 +35,6 @@ const DEFAULT_SETTINGS: Settings = {
         totalArticles: 0,
         totalHighlights: 0,
     },
-    syncedFiles: [],
     groups: [],
     useDomainFolders: true,
 };
@@ -112,7 +110,6 @@ const createSettingsStore = () => {
             state.history.totalArticles = 0;
             state.history.totalHighlights = 0;
             state.lastSyncDate = undefined;
-            state.syncedFiles = [];
             return state;
         });
     };
@@ -160,20 +157,6 @@ const createSettingsStore = () => {
         });
     };
 
-    const addSyncedFile = (value: SyncedFile) => {
-        store.update((state) => {
-            const uniqueValuesSet = new Set();
-            const syncFiles = [...state.syncedFiles, value];
-            state.syncedFiles = syncFiles.filter((obj) => {
-                const isPresentInSet = uniqueValuesSet.has(obj.filename);
-                uniqueValuesSet.add(obj.filename);
-                return !isPresentInSet;
-            });
-
-            return state;
-        });
-    };
-
     const setGroups = async (value: Group[]) => {
         store.update((state) => {
             state.groups = value;
@@ -209,7 +192,6 @@ const createSettingsStore = () => {
             setSyncOnBoot,
             incrementHistory,
             setDateTimeFormat,
-            addSyncedFile,
             setGroups,
             resetGroups,
             setUseDomainFolder,
