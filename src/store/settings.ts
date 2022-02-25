@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
     highlightsFolder: 'articles',
     syncOnBoot: true,
-    autoSyncInterval: 5,
+    autoSyncInterval: 15,
     enableBidirectionalSync: true,
 
     useDomainFolders: true,

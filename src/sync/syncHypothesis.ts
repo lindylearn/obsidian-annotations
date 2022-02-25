@@ -17,8 +17,8 @@ export default class SyncHypothesis {
     }
 
     async startSync(uri?: string) {
-        const lastSyncDate = new Date('2022-02-24 00:00:00');
-        // const lastSyncDate = get(settingsStore).lastSyncDate;
+        // const lastSyncDate = new Date('2022-02-24 00:00:00');
+        const lastSyncDate = get(settingsStore).lastSyncDate;
         const token = get(settingsStore).token;
         const userid = get(settingsStore).user;
         const apiManager = new ApiManager(token, userid);

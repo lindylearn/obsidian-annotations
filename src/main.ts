@@ -100,9 +100,6 @@ export default class HypothesisPlugin extends Plugin {
                 this.startAutoSync();
             }, minutesToSync * 60000);
         }
-        console.log(
-            `StartAutoSync: this.timeoutIDAutoSync ${this.timeoutIDAutoSync} with ${minutesToSync} minutes`
-        );
     }
 
     async clearAutoSync(): Promise<void> {
@@ -110,7 +107,6 @@ export default class HypothesisPlugin extends Plugin {
             window.clearTimeout(this.timeoutIDAutoSync);
             this.timeoutIDAutoSync = undefined;
         }
-        console.log('Clearing auto sync...');
     }
 
     private statusBarItem: HTMLElement = null;
