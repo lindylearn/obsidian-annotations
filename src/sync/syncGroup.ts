@@ -5,8 +5,8 @@ import parseGroupsResponse from '~/parser/parseGroupResponse';
 
 export default class SyncGroup {
     async startSync() {
-        const token = await get(settingsStore).token;
-        const userid = await get(settingsStore).user;
+        const token = get(settingsStore).token;
+        const userid = get(settingsStore).user;
 
         const apiManager = new ApiManager(token, userid);
 
@@ -14,7 +14,7 @@ export default class SyncGroup {
 
         const fetchedGroups = await parseGroupsResponse(responseBody);
 
-        const currentGroups = await get(settingsStore).groups;
+        const currentGroups = get(settingsStore).groups;
 
         const mergedGroups = [...currentGroups, ...fetchedGroups];
         const set = new Set();
@@ -27,6 +27,6 @@ export default class SyncGroup {
             return false;
         }, set);
 
-        await settingsStore.actions.setGroups(unionGroups);
+        settingsStore.update({ groups: unionGroups });
     }
 }

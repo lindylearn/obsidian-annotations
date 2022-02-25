@@ -93,7 +93,7 @@ export class SettingsTab extends PluginSettingTab {
                             .setButtonText('Removing API token...')
                             .setDisabled(true);
 
-                        await settingsStore.actions.disconnect();
+                        settingsStore.actions.disconnect();
 
                         this.display(); // rerender
                     });
@@ -133,25 +133,16 @@ export class SettingsTab extends PluginSettingTab {
             .addText((text) => {
                 text.setPlaceholder(String(0))
                     .setValue(String(get(settingsStore).autoSyncInterval))
-                    .onChange(async (value) => {
-                        if (!isNaN(Number(value))) {
-                            const minutes = Number(value);
-                            await settingsStore.actions.setAutoSyncInterval(
-                                minutes
-                            );
-                            const autoSyncInterval =
-                                get(settingsStore).autoSyncInterval;
-                            console.log(autoSyncInterval);
-                            if (autoSyncInterval > 0) {
-                                this.plugin.clearAutoSync();
-                                this.plugin.startAutoSync(minutes);
-                                console.log(
-                                    `Auto sync enabled! Every ${minutes} minutes.`
-                                );
-                            } else if (autoSyncInterval <= 0) {
-                                this.plugin.clearAutoSync() &&
-                                    console.log('Auto sync disabled!');
-                            }
+                    .onChange((value) => {
+                        const minutes = Number(value);
+
+                        settingsStore.update({ autoSyncInterval: minutes });
+
+                        if (minutes > 0) {
+                            this.plugin.clearAutoSync();
+                            this.plugin.startAutoSync(minutes);
+                        } else {
+                            this.plugin.clearAutoSync();
                         }
                     });
             });
@@ -179,9 +170,9 @@ export class SettingsTab extends PluginSettingTab {
                 });
                 return dropdown
                     .setValue(get(settingsStore).highlightsFolder)
-                    .onChange(async (value) => {
-                        await settingsStore.actions.setHighlightsFolder(value);
-                    });
+                    .onChange((highlightsFolder) =>
+                        settingsStore.update({ highlightsFolder })
+                    );
             });
     }
 
@@ -202,14 +193,15 @@ export class SettingsTab extends PluginSettingTab {
                 text.inputEl.placeholder = defaultMetadataTemplate;
                 text.setValue(
                     get(settingsStore).customMetadataTemplate
-                ).onChange(async (value) => {
-                    const isValid = this.renderer.validate(value);
+                ).onChange(async (customMetadataTemplate) => {
+                    const isValid = this.renderer.validate(
+                        customMetadataTemplate
+                    );
+                    text.inputEl.style.border = isValid ? '' : '1px solid red';
 
                     if (isValid) {
-                        await settingsStore.actions.setMetadataTemplate(value);
+                        settingsStore.update({ customMetadataTemplate });
                     }
-
-                    text.inputEl.style.border = isValid ? '' : '1px solid red';
                 });
                 return text;
             });
@@ -240,9 +232,9 @@ export class SettingsTab extends PluginSettingTab {
             .addToggle((toggle) =>
                 toggle
                     .setValue(get(settingsStore).useDomainFolders)
-                    .onChange(async (value) => {
-                        await settingsStore.actions.setUseDomainFolder(value);
-                    })
+                    .onChange((useDomainFolders) =>
+                        settingsStore.update({ useDomainFolders })
+                    )
             );
     }
 
@@ -255,9 +247,9 @@ export class SettingsTab extends PluginSettingTab {
             .addToggle((toggle) =>
                 toggle
                     .setValue(get(settingsStore).syncOnBoot)
-                    .onChange(async (value) => {
-                        await settingsStore.actions.setSyncOnBoot(value);
-                    })
+                    .onChange((syncOnBoot) =>
+                        settingsStore.update({ syncOnBoot })
+                    )
             );
     }
 
@@ -269,10 +261,10 @@ export class SettingsTab extends PluginSettingTab {
             )
             .addToggle((toggle) =>
                 toggle
-                    .setValue(get(settingsStore).syncOnBoot)
-                    .onChange(async (value) => {
-                        await settingsStore.actions.setSyncOnBoot(value);
-                    })
+                    .setValue(get(settingsStore).enableBidirectionalSync)
+                    .onChange((enableBidirectionalSync) =>
+                        settingsStore.update({ enableBidirectionalSync })
+                    )
             );
     }
 
@@ -287,8 +279,8 @@ export class SettingsTab extends PluginSettingTab {
                     .setButtonText('Reset')
                     .setDisabled(!get(settingsStore).isConnected)
                     .setCta()
-                    .onClick(async () => {
-                        await settingsStore.actions.resetSyncHistory();
+                    .onClick(() => {
+                        settingsStore.actions.resetSyncHistory();
                         this.display(); // rerender
                     });
             });
@@ -305,9 +297,9 @@ export class SettingsTab extends PluginSettingTab {
             .addText((text) => {
                 text.setPlaceholder('YYYY-MM-DD')
                     .setValue(get(settingsStore).dateTimeFormat)
-                    .onChange(async (value) => {
-                        await settingsStore.actions.setDateTimeFormat(value);
-                    });
+                    .onChange((dateTimeFormat) =>
+                        settingsStore.update({ dateTimeFormat })
+                    );
             });
     }
 
@@ -327,7 +319,7 @@ export class SettingsTab extends PluginSettingTab {
                     .setTooltip('Reset group selections')
                     .setDisabled(!get(settingsStore).isConnected)
                     .onClick(async () => {
-                        await settingsStore.actions.resetGroups();
+                        settingsStore.update({ groups: [] });
                         await this.syncGroup.startSync();
                         this.display(); // rerender
                     });

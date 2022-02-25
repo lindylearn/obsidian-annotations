@@ -52,6 +52,6 @@ export default class ManageGroupsModal extends Modal {
             );
         });
 
-        await settingsStore.actions.setGroups(groups);
+        settingsStore.update({ groups });
     }
 }

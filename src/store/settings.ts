@@ -15,6 +15,7 @@ type Settings = {
     isConnected: boolean;
     customMetadataTemplate: string;
     syncOnBoot: boolean;
+    enableBidirectionalSync: boolean;
     history: SyncHistory;
     dateTimeFormat: string;
     autoSyncInterval: number;
@@ -29,6 +30,7 @@ const DEFAULT_SETTINGS: Settings = {
     isConnected: false,
     customMetadataTemplate: null,
     syncOnBoot: true,
+    enableBidirectionalSync: true,
     autoSyncInterval: 5,
     dateTimeFormat: 'YYYY-MM-DD',
     history: {
@@ -79,7 +81,7 @@ const createSettingsStore = () => {
         }
     });
 
-    const connect = async (token: string, userid: string) => {
+    const connect = (token: string, userid: string) => {
         store.update((state) => {
             state.isConnected = true;
             state.token = token;
@@ -94,13 +96,6 @@ const createSettingsStore = () => {
             state.user = undefined;
             state.token = undefined;
             state.groups = [];
-            return state;
-        });
-    };
-
-    const setHighlightsFolder = (value: string) => {
-        store.update((state) => {
-            state.highlightsFolder = value;
             return state;
         });
     };
@@ -121,20 +116,6 @@ const createSettingsStore = () => {
         });
     };
 
-    const setMetadataTemplate = (value: string) => {
-        store.update((state) => {
-            state.customMetadataTemplate = value;
-            return state;
-        });
-    };
-
-    const setSyncOnBoot = (value: boolean) => {
-        store.update((state) => {
-            state.syncOnBoot = value;
-            return state;
-        });
-    };
-
     const incrementHistory = (delta: SyncHistory) => {
         store.update((state) => {
             state.history.totalArticles += delta.totalArticles;
@@ -143,58 +124,20 @@ const createSettingsStore = () => {
         });
     };
 
-    const setDateTimeFormat = (value: string) => {
-        store.update((state) => {
-            state.dateTimeFormat = value;
-            return state;
-        });
-    };
-
-    const setAutoSyncInterval = (value: number) => {
-        store.update((state) => {
-            state.autoSyncInterval = value;
-            return state;
-        });
-    };
-
-    const setGroups = async (value: Group[]) => {
-        store.update((state) => {
-            state.groups = value;
-            return state;
-        });
-    };
-
-    const resetGroups = async () => {
-        store.update((state) => {
-            state.groups = [];
-            return state;
-        });
-    };
-
-    const setUseDomainFolder = (value: boolean) => {
-        store.update((state) => {
-            state.useDomainFolders = value;
-            return state;
-        });
+    const update = (settingsOverride: Partial<Settings>) => {
+        store.update((state) => ({ ...state, ...settingsOverride }));
     };
 
     return {
         subscribe: store.subscribe,
         initialise,
+        update,
         actions: {
-            setHighlightsFolder,
             resetSyncHistory,
             setSyncDateToNow,
             connect,
             disconnect,
-            setAutoSyncInterval,
-            setMetadataTemplate,
-            setSyncOnBoot,
             incrementHistory,
-            setDateTimeFormat,
-            setGroups,
-            resetGroups,
-            setUseDomainFolder,
         },
     };
 };
