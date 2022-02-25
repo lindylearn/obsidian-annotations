@@ -133,11 +133,17 @@ export class SettingsTab extends PluginSettingTab {
     private sync(): void {
         const isConnected = get(settingsStore).isConnected;
         const lastSyncDate = get(settingsStore).lastSyncDate;
+        const lastSyncStats = get(syncSessionStore).lastSyncStats;
+        const changeText = lastSyncStats
+            ? `Downloaded ${lastSyncStats?.downloadedAnnotations} new annotations and uploaded ${lastSyncStats?.uploadedAnnotations} changes.`
+            : '';
         const descFragment = document
             .createRange()
             .createContextualFragment(
                 lastSyncDate && isConnected
-                    ? `Last sync ${moment(lastSyncDate).fromNow()}.`
+                    ? `Last sync ${moment(
+                          lastSyncDate
+                      ).fromNow()}. ${changeText}`
                     : 'Sync has never run.'
             );
 

@@ -12,6 +12,8 @@ export type SyncSession = {
 export type SyncResult = {
     newArticlesCount: number;
     newAnnotationsCount: number;
+    downloadedAnnotations: number;
+    uploadedAnnotations: number;
 };
 
 const createSyncSessionStore = () => {

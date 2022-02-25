@@ -76,9 +76,11 @@ export default class SyncHypothesis {
         }
 
         const isFullReset = !uri && !lastSyncDate;
-        const syncResult: SyncResult = {
+        let syncResult: SyncResult = {
             newArticlesCount: 0,
             newAnnotationsCount: 0,
+            downloadedAnnotations: 0,
+            uploadedAnnotations: 0,
         };
 
         // Reconcile and update annotation files
@@ -94,23 +96,51 @@ export default class SyncHypothesis {
                     const created = await this.fileManager.saveArticle(
                         reconciledArticle
                     );
-
-                    // Save updated counts
-                    if (created || isFullReset) {
-                        syncResult.newArticlesCount += 1;
-                        syncResult.newAnnotationsCount +=
-                            reconciledArticle.highlights.length;
-                    } else {
-                        const newCount = reconciledArticle.highlights.filter(
-                            (a) => a.remote_state === RemoteState.REMOTE_ONLY
-                        ).length;
-                        syncResult.newAnnotationsCount += newCount;
-                    }
+                    syncResult = this.updateSyncState(
+                        created,
+                        isFullReset,
+                        syncResult,
+                        reconciledArticle
+                    );
                 } catch (e) {
                     console.error(`Error syncing ${article.metadata.title}`, e);
                 }
             }
         }
+
+        return syncResult;
+    }
+
+    // Update the sync state after saving one article
+    private updateSyncState(
+        createdFile: boolean,
+        isFullReset: boolean,
+        syncResult: SyncResult,
+        reconciledArticle: Article
+    ) {
+        if (createdFile || isFullReset) {
+            syncResult.newArticlesCount += 1;
+            syncResult.newAnnotationsCount +=
+                reconciledArticle.highlights.length;
+        } else {
+            const newCount = reconciledArticle.highlights.filter(
+                (a) => a.remote_state === RemoteState.REMOTE_ONLY
+            ).length;
+            syncResult.newAnnotationsCount += newCount;
+        }
+
+        const downloaded = reconciledArticle.highlights.filter((a) =>
+            [RemoteState.REMOTE_ONLY, RemoteState.UPDATED_REMOTE].contains(
+                a.remote_state
+            )
+        ).length;
+        const uploaded = reconciledArticle.highlights.filter((a) =>
+            [RemoteState.LOCAL_ONLY, RemoteState.UPDATED_LOCAL].contains(
+                a.remote_state
+            )
+        ).length;
+        syncResult.downloadedAnnotations += downloaded;
+        syncResult.uploadedAnnotations += uploaded;
 
         return syncResult;
     }
