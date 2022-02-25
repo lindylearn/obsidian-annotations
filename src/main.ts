@@ -6,7 +6,6 @@ import { get } from 'svelte/store';
 import SyncHypothesis from '~/sync/syncHypothesis';
 import hypothesisIcon from '~/assets/hypothesisIcon.svg'
 import FileManager from '~/fileManager';
-import ResyncDelFileModal from '~/modals/resyncDelFileModal';
 import { frontMatterDocType } from "~/utils/frontmatter"
 
 addIcon('hypothesisIcon', hypothesisIcon);
@@ -66,18 +65,6 @@ export default class HypothesisPlugin extends Plugin {
 			},
 		});
 
-		this.addCommand({
-			id: 'hypothesis-resync-deleted',
-			name: 'Resync deleted file(s)',
-			callback: () => {
-				if (!get(settingsStore).isConnected) {
-					new Notice('Please configure Hypothesis API token in the plugin setting');
-				} else {
-					this.showResyncModal();
-				}
-			},
-		});
-
 		this.addSettingTab(new SettingsTab(this.app, this));
 
 		if (get(settingsStore).syncOnBoot) {
@@ -109,11 +96,6 @@ export default class HypothesisPlugin extends Plugin {
 				}
 			}
 		}));
-	}
-
-	async showResyncModal(): Promise<void> {
-		const resyncDelFileModal = new ResyncDelFileModal(this.app);
-        await resyncDelFileModal.waitForClose;
 	}
 
 	async onunload() : Promise<void> {

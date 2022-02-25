@@ -8,7 +8,6 @@ import { Renderer } from '~/renderer';
 import { settingsStore } from '~/store';
 import { TokenManager } from '~/store/tokenManager';
 import ApiTokenModal from '~/modals/apiTokenModal';
-import ResyncDelFileModal from '~/modals/resyncDelFileModal';
 import SyncGroup from '~/sync/syncGroup';
 import ManageGroupsModal from '~/modals/manageGroupsModal';
 import defaultMetadataTemplate from '~/assets/defaultMetadataTemplate.njk';
@@ -284,28 +283,6 @@ export class SettingsTab extends PluginSettingTab {
           .setValue(get(settingsStore).dateTimeFormat)
           .onChange(async (value) => {
             await settingsStore.actions.setDateTimeFormat(value);
-          });
-      });
-  }
-
-  private async resyncDeletedFile(): Promise<void> {
-    new Setting(this.containerEl)
-      .setName('Sync deleted file(s)')
-      .setDesc('Manually sync deleted file(s)')
-      .addButton((button) => {
-        return button
-          .setButtonText('Show deleted file(s)')
-          .setCta()
-          .onClick(async () => {
-            button
-              .removeCta()
-              .setButtonText('Resync deleted file..')
-              .setDisabled(true);
-
-            const resyncDelFileModal = new ResyncDelFileModal(this.app);
-            await resyncDelFileModal.waitForClose;
-
-            this.display(); // rerender
           });
       });
   }
