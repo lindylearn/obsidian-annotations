@@ -12,10 +12,12 @@ export const reconcileArticle = (
                 ...remoteArticle.page_note,
                 remote_state: RemoteState.REMOTE_ONLY,
             },
-            highlights: remoteArticle.highlights.map((h) => ({
-                ...h,
-                remote_state: RemoteState.REMOTE_ONLY,
-            })),
+            highlights: remoteArticle.highlights
+                .map((h) => ({
+                    ...h,
+                    remote_state: RemoteState.REMOTE_ONLY,
+                }))
+                .sort((a, b) => (a.created > b.created ? 1 : -1)),
         };
     }
 
