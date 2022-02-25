@@ -7,15 +7,7 @@ import type FileManager from '~/fileManager';
 import { Article, RemoteState } from '~/models';
 import { reconcileArticle } from '~/bidirectional-sync/reconcile';
 
-const initialSyncResult = {
-    newArticlesCount: 0,
-    newHighlightsCount: 0,
-    updatedArticlesCount: 0,
-    updatedHighlightsCount: 0,
-};
-
 export default class SyncHypothesis {
-    private syncState: SyncResult = initialSyncResult;
     private syncGroup: SyncGroup;
     private fileManager: FileManager;
 
@@ -25,18 +17,25 @@ export default class SyncHypothesis {
     }
 
     async startSync(uri?: string) {
-        const lastSyncDate = new Date('2022-02-24 00:00:00'); //get(settingsStore).lastSyncDate
+        const lastSyncDate = new Date('2022-02-24 00:00:00');
+        // const lastSyncDate = get(settingsStore).lastSyncDate;
         const token = get(settingsStore).token;
         const userid = get(settingsStore).user;
         const apiManager = new ApiManager(token, userid);
 
-        syncSessionStore.actions.trackStartSync();
-        this.syncState = initialSyncResult;
+        const isFullReset = !uri && !lastSyncDate;
+        syncSessionStore.actions.trackStartSync(isFullReset);
         try {
-            await this.syncGroup.sync();
-            await this.syncArticles(apiManager, lastSyncDate, uri);
+            if (!uri) {
+                await this.syncGroup.sync();
+            }
+            const syncState = await this.syncArticles(
+                apiManager,
+                lastSyncDate,
+                uri
+            );
 
-            syncSessionStore.actions.trackCompleteSync(this.syncState);
+            syncSessionStore.actions.trackCompleteSync(syncState);
         } catch (err) {
             syncSessionStore.actions.trackErrorSync(err);
         }
@@ -46,7 +45,7 @@ export default class SyncHypothesis {
         apiManager: ApiManager,
         lastSyncDate: Date,
         uri?: string
-    ): Promise<void> {
+    ): Promise<SyncResult> {
         let articles = [];
         if (uri) {
             console.info(`Syncing annotations for URL ${uri}...`);
@@ -76,36 +75,44 @@ export default class SyncHypothesis {
             articles = parseSyncResponse(allAnnotations);
         }
 
-        // Update annotation files locally
+        const isFullReset = !uri && !lastSyncDate;
+        const syncResult: SyncResult = {
+            newArticlesCount: 0,
+            newAnnotationsCount: 0,
+        };
+
+        // Reconcile and update annotation files
         if (articles.length > 0) {
             for (const article of articles) {
                 try {
-                    await this.syncArticle(article, apiManager);
+                    // Compare remote & local state, the save combined state
+                    const reconciledArticle =
+                        await this.syncArticleWithLocalState(
+                            article,
+                            apiManager
+                        );
+                    const created = await this.fileManager.saveArticle(
+                        reconciledArticle
+                    );
+
+                    // Save updated counts
+                    if (created || isFullReset) {
+                        syncResult.newArticlesCount += 1;
+                        syncResult.newAnnotationsCount +=
+                            reconciledArticle.highlights.length;
+                    } else {
+                        const newCount = reconciledArticle.highlights.filter(
+                            (a) => a.remote_state === RemoteState.REMOTE_ONLY
+                        ).length;
+                        syncResult.newAnnotationsCount += newCount;
+                    }
                 } catch (e) {
                     console.error(`Error syncing ${article.metadata.title}`, e);
                 }
             }
         }
-    }
 
-    private async syncArticle(
-        article: Article,
-        apiManager: ApiManager
-    ): Promise<void> {
-        const reconciledArticle = await this.syncArticleWithLocalState(
-            article,
-            apiManager
-        );
-
-        const createdNewArticle = await this.fileManager.saveArticle(
-            reconciledArticle
-        );
-
-        if (createdNewArticle) {
-            this.syncState.newArticlesCount += 1;
-        }
-        this.syncState.newHighlightsCount +=
-            reconciledArticle.highlights.length;
+        return syncResult;
     }
 
     private async syncArticleWithLocalState(

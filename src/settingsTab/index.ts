@@ -92,9 +92,10 @@ export class SettingsTab extends PluginSettingTab {
             .addButton((button) => {
                 return button
                     .setButtonText('Disconnect')
-                    .setCta()
+                    .setWarning()
                     .onClick(async () => {
                         settingsStore.actions.disconnect();
+                        syncSessionStore.actions.reset();
 
                         this.display(); // rerender
                     });
@@ -121,7 +122,9 @@ export class SettingsTab extends PluginSettingTab {
                             this.tokenManager
                         );
                         await tokenModal.waitForClose;
+                        this.display(); // rerender
 
+                        await this.syncHypothesis.startSync();
                         this.display(); // rerender
                     });
             });
@@ -146,8 +149,9 @@ export class SettingsTab extends PluginSettingTab {
                     .setButtonText('Sync now')
                     .setDisabled(!isConnected)
                     .setCta()
-                    .onClick(() => {
-                        this.syncHypothesis.startSync();
+                    .onClick(async () => {
+                        await this.syncHypothesis.startSync();
+                        this.display(); // rerender
                     });
             });
     }
@@ -323,7 +327,7 @@ export class SettingsTab extends PluginSettingTab {
                 return button
                     .setButtonText('Reset')
                     .setDisabled(!get(settingsStore).isConnected)
-                    .setCta()
+                    .setWarning()
                     .onClick(() => {
                         syncSessionStore.actions.reset();
                         this.display(); // rerender

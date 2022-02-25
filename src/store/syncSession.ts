@@ -11,9 +11,7 @@ export type SyncSession = {
 
 export type SyncResult = {
     newArticlesCount: number;
-    newHighlightsCount: number;
-    updatedArticlesCount: number;
-    updatedHighlightsCount: number;
+    newAnnotationsCount: number;
 };
 
 const createSyncSessionStore = () => {
@@ -24,13 +22,17 @@ const createSyncSessionStore = () => {
     };
     const store = writable(initialState);
 
-    const trackStartSync = () => {
+    const trackStartSync = (isFullReset: boolean) => {
         console.info(`Annotations sync start.`);
         store.update((state) => {
             state.status = 'sync';
             state.errorMessage = undefined;
             return state;
         });
+
+        if (isFullReset) {
+            settingsStore.update({ globalSyncStats: null });
+        }
     };
 
     const trackErrorSync = (errorMessage: string) => {
@@ -50,11 +52,12 @@ const createSyncSessionStore = () => {
         store.update((state) => {
             settingsStore.updateFn((state) => {
                 state.globalSyncStats = {
+                    remoteArticlesCount:
+                        (state.globalSyncStats?.remoteArticlesCount || 0) +
+                        result.newArticlesCount,
                     remoteAnnotationsCount:
                         (state.globalSyncStats?.remoteAnnotationsCount || 0) +
-                        1,
-                    remoteArticlesCount:
-                        (state.globalSyncStats?.remoteArticlesCount || 0) + 1,
+                        result.newAnnotationsCount,
                 };
 
                 return state;
@@ -75,6 +78,9 @@ const createSyncSessionStore = () => {
             state.lastSyncStats = null;
             return state;
         });
+
+        settingsStore.update({ globalSyncStats: null });
+        settingsStore.update({ lastSyncDate: null });
     };
 
     return {
