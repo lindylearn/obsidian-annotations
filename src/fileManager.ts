@@ -34,9 +34,9 @@ export default class FileManager {
         const fileContent = addFrontMatter(markdownContent, article);
 
         if (existingFile) {
-            console.debug(`Updating ${existingFile.path}`);
+            console.debug(`Updating ${existingFile.file.path}`);
 
-            await this.vault.modify(existingFile, fileContent);
+            await this.vault.modify(existingFile.file, fileContent);
             return false;
         } else {
             const newFilePath = await this.getNewArticleFilePath(article);
@@ -54,25 +54,26 @@ export default class FileManager {
             return null;
         }
 
-        const content = await this.vault.cachedRead(file);
-
-        const pageNote = parseFilePageNote(content);
-        const annotations = parseFileAnnotations(content);
-
-        return {
-            id: article.id,
-            page_note: pageNote,
-            highlights: annotations,
-            updated: new Date(file.stat.mtime),
-        };
+        return this.fileToArticle(file);
     }
 
-    private async getArticleFile(article: Article): Promise<TFile | null> {
+    // Read local articles that were modified locally
+    public async getModifiedArticles(since: Date): Promise<LocalArticle[]> {
         const files = await this.getAnnotationFiles();
-        return (
-            files.find((file) => file.articleUrl === article.metadata.url)
-                ?.file || null
+        const modifiedFiles = files.filter(
+            (file) => file.file.stat.mtime > since.valueOf()
         );
+
+        return await Promise.all(
+            modifiedFiles.map(this.fileToArticle.bind(this))
+        );
+    }
+
+    private async getArticleFile(
+        article: Article
+    ): Promise<AnnotationFile | null> {
+        const files = await this.getAnnotationFiles();
+        return files.find((file) => file.articleUrl === article.metadata.url);
     }
 
     // TODO cache this method for performance?
@@ -111,5 +112,19 @@ export default class FileManager {
         const fileName = `${sanitizeTitle(article.metadata.title)}.md`;
         const filePath = `${folderPath}/${fileName}`;
         return filePath;
+    }
+
+    private async fileToArticle(file: AnnotationFile): Promise<LocalArticle> {
+        const content = await this.vault.cachedRead(file.file);
+
+        const pageNote = parseFilePageNote(content);
+        const annotations = parseFileAnnotations(content);
+
+        return {
+            id: file.articleUrl,
+            page_note: pageNote,
+            highlights: annotations,
+            updated: new Date(file.file.stat.mtime),
+        };
     }
 }

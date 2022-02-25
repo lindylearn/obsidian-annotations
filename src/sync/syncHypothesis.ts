@@ -60,19 +60,23 @@ export default class SyncHypothesis {
         } else {
             console.info(`Fetching new annotations since ${lastSyncDate}...`);
             const newAnnoations = await apiManager.getHighlights(lastSyncDate);
-            const changedArticles = parseSyncResponse(newAnnoations);
+            const remotelyChangedArticles = parseSyncResponse(newAnnoations);
+            const locallyChangedArticles =
+                await this.fileManager.getModifiedArticles(lastSyncDate);
 
             console.info(
-                `Fetching all annotations for the ${changedArticles.length} changed articles...`
+                `Fetching all annotations for the ${remotelyChangedArticles.length} remotely and ${locallyChangedArticles.length} locally changed articles...`
             );
-            const allAnnotations = (
-                await Promise.all(
-                    changedArticles.map(async (article) =>
-                        apiManager.getHighlightWithUri(article.metadata.url)
-                    )
+            const changedUrls = remotelyChangedArticles
+                .map((a) => a.metadata.url)
+                .concat(locallyChangedArticles.map((a) => a.id));
+            const uniqueChangedUrls = [...new Set(changedUrls)];
+            const allAnnotations = await Promise.all(
+                uniqueChangedUrls.map((url) =>
+                    apiManager.getHighlightWithUri(url)
                 )
-            ).flat();
-            articles = parseSyncResponse(allAnnotations);
+            );
+            articles = parseSyncResponse(allAnnotations.flat());
         }
 
         const isFullReset = !uri && !lastSyncDate;
