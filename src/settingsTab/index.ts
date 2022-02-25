@@ -122,42 +122,48 @@ export class SettingsTab extends PluginSettingTab {
                             this.tokenManager
                         );
                         await tokenModal.waitForClose;
-                        this.display(); // rerender
 
-                        await this.syncHypothesis.startSync();
-                        this.display(); // rerender
+                        this.syncHypothesis
+                            .startSync()
+                            .then(this.display.bind(this));
+                        window.setTimeout(this.display.bind(this), 1);
                     });
             });
     }
 
     private sync(): void {
+        let description = 'Sync has never run.';
         const isConnected = get(settingsStore).isConnected;
+        const isSynching = get(syncSessionStore).status === 'sync';
         const lastSyncDate = get(settingsStore).lastSyncDate;
-        const lastSyncStats = get(syncSessionStore).lastSyncStats;
-        const changeText = lastSyncStats
-            ? `Downloaded ${lastSyncStats?.downloadedAnnotations} new annotations and uploaded ${lastSyncStats?.uploadedAnnotations} changes.`
-            : '';
-        const descFragment = document
-            .createRange()
-            .createContextualFragment(
-                lastSyncDate && isConnected
-                    ? `Last sync ${moment(
-                          lastSyncDate
-                      ).fromNow()}. ${changeText}`
-                    : 'Sync has never run.'
-            );
+
+        if (isSynching) {
+            description = 'Fetching annotations...';
+        } else if (isConnected && lastSyncDate) {
+            const lastSyncStats = get(syncSessionStore).lastSyncStats;
+
+            const relativeTimeMessage = `Last sync ${moment(
+                lastSyncDate
+            ).fromNow()}.`;
+            const changeText = lastSyncStats
+                ? `Downloaded ${lastSyncStats?.downloadedAnnotations} new annotations and uploaded ${lastSyncStats?.uploadedAnnotations} changes.`
+                : '';
+            description = `${relativeTimeMessage} ${changeText}`;
+        }
 
         new Setting(this.containerEl)
             .setName('Sync state')
-            .setDesc(descFragment)
+            .setDesc(description)
             .addButton((button) => {
                 return button
                     .setButtonText('Sync now')
                     .setDisabled(!isConnected)
                     .setCta()
-                    .onClick(async () => {
-                        await this.syncHypothesis.startSync();
-                        this.display(); // rerender
+                    .onClick(() => {
+                        this.syncHypothesis
+                            .startSync()
+                            .then(this.display.bind(this));
+                        window.setTimeout(this.display.bind(this), 1);
                     });
             });
     }
@@ -327,7 +333,7 @@ export class SettingsTab extends PluginSettingTab {
         new Setting(this.containerEl)
             .setName('Reset sync')
             .setDesc(
-                "Reset the synchronization state to regenerate files for all your annotations. Existing local files with matching frontmatter will be reused. Local annotation edits will be uploaded if you enabled the 'Bi-directional sync' above."
+                'Reset the synchronization state to regenerate files for all your annotations. Any existing local files with matching frontmatter will be reused.'
             )
             .addButton((button) => {
                 return button
