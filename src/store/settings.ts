@@ -13,7 +13,7 @@ type Settings = {
   highlightsFolder: string;
   lastSyncDate?: Date;
   isConnected: boolean;
-  template: string;
+  customMetadataTemplate: string;
   syncOnBoot: boolean;
   history: SyncHistory;
   dateTimeFormat: string;
@@ -28,7 +28,7 @@ const DEFAULT_SETTINGS: Settings = {
   user: '',
   highlightsFolder: '/articles',
   isConnected: false,
-  template: null,
+  customMetadataTemplate: null,
   syncOnBoot: true,
   autoSyncInterval: 5,
   dateTimeFormat: 'YYYY-MM-DD',
@@ -118,9 +118,9 @@ const createSettingsStore = () => {
     });
   };
 
-  const setTemplate = (value: string) => {
+  const setMetadataTemplate = (value: string) => {
     store.update((state) => {
-      state.template = value;
+      state.customMetadataTemplate = value;
       return state;
     });
   };
@@ -199,7 +199,7 @@ const createSettingsStore = () => {
       connect,
       disconnect,
       setAutoSyncInterval,
-      setTemplate,
+      setMetadataTemplate,
       setSyncOnBoot,
       incrementHistory,
       setDateTimeFormat,

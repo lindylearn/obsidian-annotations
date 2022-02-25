@@ -3,6 +3,8 @@ import nunjucks from 'nunjucks';
 import { get } from 'svelte/store';
 import { settingsStore } from '~/store';
 import type { Article, RenderTemplate } from './models';
+import defaultMetadataTemplate from '~/assets/defaultMetadataTemplate.njk';
+import defaultAnnotationsTemplate from '~/assets/defaultAnnotationsTemplate.njk';
 
 export class Renderer {
   constructor() {
@@ -33,7 +35,8 @@ export class Renderer {
        annotation_dates: annotationTimestamps,
     };
 
-    const template = get(settingsStore).template;
+    const metadataTemplate = get(settingsStore).customMetadataTemplate || defaultMetadataTemplate;
+    const template = metadataTemplate + defaultAnnotationsTemplate;
     const content = nunjucks.renderString(template, context);
     return content;
   }

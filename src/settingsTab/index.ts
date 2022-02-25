@@ -185,13 +185,12 @@ export class SettingsTab extends PluginSettingTab {
         text.inputEl.style.fontFamily = 'var(--font-monospace)';
         text.inputEl.placeholder = defaultMetadataTemplate
         text
-          .setValue(get(settingsStore).template)
+          .setValue(get(settingsStore).customMetadataTemplate)
           .onChange(async (value) => {
-            const fullTemplate = value + defaultAnnotationsTemplate;
-            const isValid = this.renderer.validate(fullTemplate);
+            const isValid = this.renderer.validate(value);
 
             if (isValid) {
-              await settingsStore.actions.setTemplate(fullTemplate);
+              await settingsStore.actions.setMetadataTemplate(value);
             }
 
             text.inputEl.style.border = isValid ? '' : '1px solid red';
