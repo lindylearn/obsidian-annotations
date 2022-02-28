@@ -67,12 +67,14 @@ const reconcileAnnotations = (
         reconciledHighlights.push(reconciledAnnotation);
 
         // Mark this annotation as processed
-        delete remoteAnnotationsMap[remoteAnnotation.id];
+        if (remoteAnnotation) {
+            delete remoteAnnotationsMap[remoteAnnotation.id];
+        }
     }
 
     // Add new remote annotations to end
     reconciledHighlights = reconciledHighlights.concat(
-        Object.values(remoteAnnotations)
+        Object.values(remoteAnnotationsMap)
             .map((a) => ({
                 ...a,
                 remote_state: RemoteState.REMOTE_ONLY,

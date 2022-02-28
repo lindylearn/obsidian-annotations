@@ -30,6 +30,10 @@ const populateArticleReplies = async (article: Article): Promise<Article> => {
         );
     article.highlights.map((annotation) => {
         if (annotation.reply_to) {
+            if (!annotationsMap[annotation.reply_to]) {
+                // replied-to annotation does not exist (deleted, or outside pagination?)
+                return;
+            }
             if (!annotationsMap[annotation.reply_to].replies) {
                 annotationsMap[annotation.reply_to].replies = [];
             }
