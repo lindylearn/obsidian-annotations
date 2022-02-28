@@ -10,10 +10,13 @@
 {% macro annotationText(highlight, indentLevel = 0) -%}
     {%- set lines = highlight.annotation.split("\n\n") -%}
         {%- for line in lines -%}
-            {%- for i in range(0, indentLevel) %}{{ "	" }}{% endfor -%}
+            {%- for i in range(0, indentLevel) -%}{{ "	" }}{%- endfor -%}
             {{ "- " }}
-            {%- if not highlight.by_active_user %}[{{ highlight.user }}](https://hypothes.is/users/{{ highlight.user }}): {% endif -%}
-            {{ line | replace("\n", " ") }}{{ "\n" }}
+            {%- if highlight.by_active_user -%}
+                {{ line | replace("\n", " ") }}{{ "\n" }}
+            {%- else -%}
+                [{{ highlight.user }}](https://hypothes.is/users/{{ highlight.user }}){{ ": *" }}{{ line | replace("\n", " ") | replace("*", "") }}{{ "*" }}{{ "\n" }}
+            {%- endif -%}
         {%- endfor -%}
     {%- if highlight.tags and highlight.by_active_user | length -%}
         {%- for i in range(0, indentLevel) %}{{ "	" }}{% endfor -%}
