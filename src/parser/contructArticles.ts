@@ -37,6 +37,14 @@ const populateArticleReplies = async (article: Article): Promise<Article> => {
             if (!annotationsMap[annotation.reply_to].replies) {
                 annotationsMap[annotation.reply_to].replies = [];
             }
+            if (
+                annotationsMap[annotation.reply_to].replies.find(
+                    (a) => a.id === annotation.id
+                )
+            ) {
+                // reply already present (can happen during initial sync)
+                return;
+            }
             annotationsMap[annotation.reply_to].replies.push(annotation);
         }
     });
@@ -51,7 +59,7 @@ const filterVisibleAnnotations = (article: Article): Article => {
     const filterAnnotation = (annotation: Highlights) => {
         return (
             annotation.by_active_user &&
-            selectedGroups.find((k) => k.id == annotation.group)
+            selectedGroups.find((k) => k.id === annotation.group)
         );
     };
 

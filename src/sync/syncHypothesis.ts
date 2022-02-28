@@ -50,10 +50,12 @@ export default class SyncHypothesis {
             );
             articles = await contructArticles(articleAnnotations);
         } else if (!lastSyncDate) {
-            // Fetch all user annotations, and complete annotations for URLs where the user posted replies (optimization)
+            // Fetch all user annotations
             console.info(`Syncing all user annotations...`);
             const userAnnotations = await apiManager.getHighlights();
 
+            // Get complete annotations only for URLs where the user replied to others (where we need to render other annotations)
+            // This makes the initial sync faster
             const urlsWithUserReplies = [
                 ...new Set(
                     userAnnotations
@@ -66,6 +68,7 @@ export default class SyncHypothesis {
                     apiManager.getHighlightWithUri(url)
                 )
             );
+            // User replies deduplicated in contructArticles()
             const allAnnotations = userAnnotations.concat(
                 potentiallyReferencedAnnotations.flat()
             );

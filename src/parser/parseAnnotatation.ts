@@ -99,7 +99,6 @@ const parseAuthorUrl = (url: string) => {
 };
 
 const parseTitleFromUrl = (url: string) => {
-    console.log(url);
     const domain = new URL(url);
     let pathname = domain.pathname;
 
