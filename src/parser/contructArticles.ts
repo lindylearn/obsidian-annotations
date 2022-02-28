@@ -47,11 +47,10 @@ const populateArticleReplies = async (article: Article): Promise<Article> => {
 };
 
 const filterVisibleAnnotations = (article: Article): Article => {
-    const activeUser = get(settingsStore).user;
     const selectedGroups = get(settingsStore).groups;
     const filterAnnotation = (annotation: Highlights) => {
         return (
-            annotation.user === activeUser &&
+            annotation.by_active_user &&
             selectedGroups.find((k) => k.id == annotation.group)
         );
     };

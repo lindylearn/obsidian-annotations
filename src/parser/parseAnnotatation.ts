@@ -64,6 +64,9 @@ export const parseAnnotation = (annotationData): Highlights => {
             }
         }
 
+        const activeUser = get(settingsStore).user;
+        const user = annotationData['user'].match(/([^:]+)@/)[1];
+
         return {
             id: annotationData['id'],
             created: new Date(annotationData['created']),
@@ -71,7 +74,8 @@ export const parseAnnotation = (annotationData): Highlights => {
             text: highlightText && cleanTextSelectorHighlight(highlightText),
             // For replies, incontext link points to parent. So append actual annotationId for parsing in parseNotes.ts
             incontext: `${annotationData['links']['incontext']}#${annotationData['id']}`,
-            user: annotationData['user'].match(/([^:]+)@/)[1],
+            user,
+            by_active_user: user === activeUser,
             annotation: annotationData['text'],
             tags: annotationData['tags'].filter(
                 (tag) => !excludedTags.includes(tag)

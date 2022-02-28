@@ -12,10 +12,10 @@
         {%- for line in lines -%}
             {%- for i in range(0, indentLevel) %}{{ "	" }}{% endfor -%}
             {{ "- " }}
-            {%- if highlight.user != "peterhagen" %}[{{ highlight.user }}](https://hypothes.is/users/{{ highlight.user }}): {% endif -%}
+            {%- if not highlight.by_active_user %}[{{ highlight.user }}](https://hypothes.is/users/{{ highlight.user }}): {% endif -%}
             {{ line | replace("\n", " ") }}{{ "\n" }}
         {%- endfor -%}
-    {%- if highlight.tags | length -%}
+    {%- if highlight.tags and highlight.by_active_user | length -%}
         {%- for i in range(0, indentLevel) %}{{ "	" }}{% endfor -%}
         - {% for tag in highlight.tags %}#{{ tag | replace(" ", "-")}} {% endfor -%}
         {{ "\n" }}
