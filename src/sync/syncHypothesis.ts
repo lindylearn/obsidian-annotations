@@ -2,6 +2,7 @@ import { settingsStore, syncSessionStore, SyncResult } from '~/store';
 import { get } from 'svelte/store';
 import ApiManager from '~/api/api';
 import contructArticles from '~/parser/contructArticles';
+import { parseAnnotation } from '~/parser/parseAnnotatation';
 import type FileManager from '~/fileManager';
 import { Article, RemoteState } from '~/models';
 import { reconcileArticle } from '~/bidirectional-sync/reconcile';
@@ -42,16 +43,36 @@ export default class SyncHypothesis {
     ): Promise<SyncResult> {
         let articles = [];
         if (uri) {
+            // Fetch all annotations for single URL
             console.info(`Syncing annotations for URL ${uri}...`);
             const articleAnnotations = await apiManager.getHighlightWithUri(
                 uri
             );
             articles = await contructArticles(articleAnnotations);
         } else if (!lastSyncDate) {
+            // Fetch all user annotations, and complete annotations for URLs where the user posted replies (optimization)
             console.info(`Syncing all user annotations...`);
-            const allAnnotations = await apiManager.getHighlights();
+            const userAnnotations = await apiManager.getHighlights();
+
+            const urlsWithUserReplies = [
+                ...new Set(
+                    userAnnotations
+                        .filter((a) => parseAnnotation(a).reply_to)
+                        .map((a) => a['uri'])
+                ),
+            ];
+            const potentiallyReferencedAnnotations = await Promise.all(
+                urlsWithUserReplies.map((url) =>
+                    apiManager.getHighlightWithUri(url)
+                )
+            );
+            const allAnnotations = userAnnotations.concat(
+                potentiallyReferencedAnnotations.flat()
+            );
+
             articles = await contructArticles(allAnnotations);
         } else {
+            // Collect locally & remotely changes URLs, then all annotations for those
             console.info(`Fetching new annotations since ${lastSyncDate}...`);
             const newAnnotations = await apiManager.getHighlights(lastSyncDate);
             // don't call potentially expensive contructArticles() yet
@@ -104,7 +125,7 @@ export default class SyncHypothesis {
                         reconciledArticle
                     );
                 } catch (e) {
-                    console.error(`Error syncing ${article.metadata.title}`, e);
+                    console.error(`Error syncing ${article.metadata.url}`, e);
                 }
             }
         }
