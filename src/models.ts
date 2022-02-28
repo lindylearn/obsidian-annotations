@@ -18,7 +18,7 @@ export type Highlights = {
     updated: Date;
     text: string;
     incontext: string;
-    user: string;
+    user: string; // only username, e.g. "remikalir"
     annotation: string;
     tags: string[];
     group: string;

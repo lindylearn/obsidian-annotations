@@ -10,7 +10,7 @@ type Settings = {
 
     // user auth
     token: string;
-    user: string;
+    user: string; // only username, e.g. "remikalir"
     groups: Group[];
 
     // sync settings

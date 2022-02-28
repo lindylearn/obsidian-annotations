@@ -72,7 +72,7 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     private disconnect(): void {
-        const userName = get(settingsStore).user.match(/([^:]+)@/)[1];
+        const userName = get(settingsStore).user;
         const globalSyncStats = get(settingsStore).globalSyncStats;
         const annotationCount = globalSyncStats?.remoteAnnotationsCount;
         const articleCount = globalSyncStats?.remoteArticlesCount;

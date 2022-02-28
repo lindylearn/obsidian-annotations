@@ -23,7 +23,8 @@ export default class ApiManager {
             const response = await axios.get(`${this.baseUrl}/profile`, {
                 headers: this.getHeaders(),
             });
-            return response.data.userid;
+            const fullUserId = response.data.userid; // e.g. acct:remikalir@hypothes.is
+            return fullUserId.match(/([^:]+)@/)[1];
         } catch (e) {
             new Notice(
                 'Failed to authorize Hypothes.is user. Please check your API token and try again.'
@@ -48,7 +49,7 @@ export default class ApiManager {
                         sort: 'updated',
                         order: 'asc', // Get all annotations since search_after
                         search_after: newestTimestamp,
-                        user: this.userid,
+                        user: `acct:${this.userid}@hypothes.is`,
                     },
                     headers: this.getHeaders(),
                 });
@@ -82,7 +83,9 @@ export default class ApiManager {
                 params: {
                     limit,
                     uri,
-                    user: filterToActiveUser ? this.userid : undefined,
+                    user: filterToActiveUser
+                        ? `acct:${this.userid}@hypothes.is`
+                        : undefined,
                     sort: 'updated',
                     order: 'asc',
                 },
