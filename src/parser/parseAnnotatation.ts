@@ -10,7 +10,8 @@ export const contructArticlesFromData = (apiDataList): Article[] => {
         const md5Hash = md5(url);
 
         const title =
-            annotationData['document']['title']?.[0] || parseTitleFromUrl(url);
+            annotationData['document']?.['title']?.[0] ||
+            parseTitleFromUrl(url);
         const author = parseAuthorUrl(url);
         // Set article metadata, if not already set by previous annotation
         if (!result[md5Hash]) {
@@ -94,6 +95,7 @@ const parseAuthorUrl = (url: string) => {
 };
 
 const parseTitleFromUrl = (url: string) => {
+    console.log(url);
     const domain = new URL(url);
     let pathname = domain.pathname;
 

@@ -132,16 +132,17 @@ export class SettingsTab extends PluginSettingTab {
     }
 
     private sync(): void {
-        let description = 'Sync has never run.';
         const isConnected = get(settingsStore).isConnected;
-        const isSynching = get(syncSessionStore).status === 'sync';
+        const syncStatus = get(syncSessionStore).status;
         const lastSyncDate = get(settingsStore).lastSyncDate;
 
-        if (isSynching) {
+        let description;
+        if (syncStatus === 'logged-out') {
+            description = 'Sync has never run.';
+        } else if (syncStatus === 'sync') {
             description = 'Fetching annotations...';
-        } else if (isConnected && lastSyncDate) {
+        } else if (syncStatus === 'idle') {
             const lastSyncStats = get(syncSessionStore).lastSyncStats;
-
             const relativeTimeMessage = `Last sync ${moment(
                 lastSyncDate
             ).fromNow()}.`;
@@ -149,6 +150,8 @@ export class SettingsTab extends PluginSettingTab {
                 ? `Downloaded ${lastSyncStats?.downloadedAnnotations} new annotations and uploaded ${lastSyncStats?.uploadedAnnotations} changes.`
                 : '';
             description = `${relativeTimeMessage} ${changeText}`;
+        } else if (syncStatus === 'error') {
+            description = `Error: ${get(syncSessionStore).errorMessage}`;
         }
 
         new Setting(this.containerEl)

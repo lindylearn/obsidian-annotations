@@ -43,8 +43,6 @@ const createSyncSessionStore = () => {
     const trackErrorSync = (errorMessage: string) => {
         console.error(`Annotations sync error: ${errorMessage}`);
         store.update((state) => {
-            settingsStore.update({ lastSyncDate: new Date() });
-
             state.status = 'error';
             state.syncEndDate = new Date();
             state.errorMessage = errorMessage;

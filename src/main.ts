@@ -147,7 +147,7 @@ export default class HypothesisPlugin extends Plugin {
             } else if (state.status === 'sync') {
                 text = `Synchronizing annotations...`;
             } else if (state.status === 'error') {
-                text = `Error synchronizing`;
+                text = `Error synchronizing annotations`;
             } else if (state.status === 'logged-out') {
                 text = `Not logged in`;
             }
