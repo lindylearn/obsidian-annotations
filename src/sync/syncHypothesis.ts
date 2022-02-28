@@ -135,11 +135,15 @@ export default class SyncHypothesis {
                 a.remote_state
             )
         ).length;
-        const uploaded = reconciledArticle.highlights.filter((a) =>
-            [RemoteState.LOCAL_ONLY, RemoteState.UPDATED_LOCAL].contains(
-                a.remote_state
-            )
-        ).length;
+        let uploaded = 0;
+        if (get(settingsStore).enableBidirectionalSync) {
+            uploaded = reconciledArticle.highlights.filter((a) =>
+                [RemoteState.LOCAL_ONLY, RemoteState.UPDATED_LOCAL].contains(
+                    a.remote_state
+                )
+            ).length;
+        }
+
         syncResult.downloadedAnnotations += downloaded;
         syncResult.uploadedAnnotations += uploaded;
 
@@ -184,19 +188,21 @@ export default class SyncHypothesis {
         }
 
         // Upload annotation changes
-        const annotationsToUpload = annotations.filter(
-            (h) => h.remote_state === RemoteState.UPDATED_LOCAL
-        );
-        if (annotationsToUpload.length > 0) {
-            console.info(
-                `${remoteArticle.metadata.url}: Updating ${annotationsToUpload.length} annotations on Hypothesis:`,
-                annotationsToUpload
+        if (get(settingsStore).enableBidirectionalSync) {
+            const annotationsToUpload = annotations.filter(
+                (h) => h.remote_state === RemoteState.UPDATED_LOCAL
             );
-            await Promise.all(
-                annotationsToUpload.map(({ id, annotation, tags }) =>
-                    apiManager.updateAnnotation(id, annotation, tags)
-                )
-            );
+            if (annotationsToUpload.length > 0) {
+                console.info(
+                    `${remoteArticle.metadata.url}: Updating ${annotationsToUpload.length} annotations on Hypothesis:`,
+                    annotationsToUpload
+                );
+                await Promise.all(
+                    annotationsToUpload.map(({ id, annotation, tags }) =>
+                        apiManager.updateAnnotation(id, annotation, tags)
+                    )
+                );
+            }
         }
 
         // Create new page notes,

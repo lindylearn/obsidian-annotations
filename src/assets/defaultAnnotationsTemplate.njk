@@ -12,7 +12,7 @@
         {%- for line in lines -%}
             {%- for i in range(0, indentLevel) %}{{ "	" }}{% endfor -%}
             {{ "- " }}
-            {%- if highlight.user != "peterhagen" %}[{{ highlight.user }}](): {% endif -%}
+            {%- if highlight.user != "peterhagen" %}[{{ highlight.user }}](https://hypothes.is/users/{{ highlight.user }}): {% endif -%}
             {{ line | replace("\n", " ") }}{{ "\n" }}
         {%- endfor -%}
     {%- if highlight.tags | length -%}
